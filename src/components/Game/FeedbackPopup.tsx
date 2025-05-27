@@ -1,0 +1,86 @@
+
+import React from 'react';
+import { X, CheckCircle, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Language } from '@/pages/Index';
+
+interface FeedbackPopupProps {
+  feedback: {
+    correct: boolean;
+    item: any;
+    bin: any;
+    message: string;
+  };
+  language: Language;
+  onClose: () => void;
+}
+
+const texts = {
+  EN: {
+    great: 'Great Job!',
+    oops: 'Oops!',
+    continue: 'Continue',
+    learMore: 'Learn More'
+  },
+  DE: {
+    great: 'Toll gemacht!',
+    oops: 'Ups!',
+    continue: 'Weiter',
+    learMore: 'Mehr erfahren'
+  }
+};
+
+const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClose }) => {
+  const t = texts[language];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
+      <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
+        <div className="text-center">
+          <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+            feedback.correct ? 'bg-green-100' : 'bg-red-100'
+          }`}>
+            {feedback.correct ? (
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            ) : (
+              <XCircle className="w-8 h-8 text-red-500" />
+            )}
+          </div>
+          
+          <h2 className={`text-2xl font-bold mb-2 ${
+            feedback.correct ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {feedback.correct ? t.great : t.oops}
+          </h2>
+          
+          <p className="text-gray-700 mb-6 leading-relaxed">
+            {feedback.message}
+          </p>
+
+          <div className="flex items-center justify-center space-x-3 mb-6">
+            <div className="text-3xl">
+              {feedback.item.emoji || '📦'}
+            </div>
+            <span className="text-2xl">→</span>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feedback.bin.color}`}>
+              <span className="text-white text-xl">🗑️</span>
+            </div>
+          </div>
+
+          <Button
+            onClick={onClose}
+            className={`w-full py-3 text-lg font-semibold rounded-xl transition-all duration-200 ${
+              feedback.correct 
+                ? 'bg-green-500 hover:bg-green-600 text-white' 
+                : 'bg-red-500 hover:bg-red-600 text-white'
+            }`}
+          >
+            {t.continue}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FeedbackPopup;
