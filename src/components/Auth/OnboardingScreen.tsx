@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -102,8 +101,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ language, onComplet
             <WasteItem
               item={{
                 id: 'apple_peel',
-                name: language === 'EN' ? 'Apple Peel' : 'Apfelschale',
-                category: 'Food Waste',
+                item_name: language === 'EN' ? 'Apple Peel' : 'Apfelschale',
                 emoji: '🍎'
               }}
               onDragStart={setDraggedItem}
