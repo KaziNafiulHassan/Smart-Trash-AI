@@ -1,37 +1,68 @@
 
 import React, { useState, useEffect } from 'react';
-import WelcomeScreen from '@/components/Auth/WelcomeScreen';
-import RegistrationScreen from '@/components/Auth/RegistrationScreen';
+import { useAuth } from '@/hooks/useAuth';
+import AuthScreen from '@/components/Auth/AuthScreen';
 import OnboardingScreen from '@/components/Auth/OnboardingScreen';
 import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
+import { gameService } from '@/services/gameService';
 
 export type Language = 'EN' | 'DE';
-export type Screen = 'welcome' | 'registration' | 'onboarding' | 'gameHome' | 'gameLevel' | 'profile';
+export type Screen = 'auth' | 'onboarding' | 'gameHome' | 'gameLevel' | 'profile';
 
 const Index = () => {
-  const [currentScreen, setCurrentScreen] = useState<Screen>('welcome');
+  const { user, loading } = useAuth();
+  const [currentScreen, setCurrentScreen] = useState<Screen>('auth');
   const [language, setLanguage] = useState<Language>('EN');
-  const [user, setUser] = useState<any>(null);
   const [gameProgress, setGameProgress] = useState({
     level: 1,
-    totalCorrect: 0,
-    totalAttempts: 0,
-    completedLevels: 0
+    total_correct: 0,
+    total_attempts: 0,
+    completed_levels: 0,
+    best_score: 0,
+    current_streak: 0,
+    best_streak: 0
   });
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const handleLanguageSelect = (lang: Language) => {
-    setLanguage(lang);
-    setCurrentScreen('registration');
+  useEffect(() => {
+    if (user) {
+      // Load user progress when user is authenticated
+      loadUserProgress();
+      
+      // Check if user needs onboarding (new user)
+      const userCreatedAt = new Date(user.created_at);
+      const now = new Date();
+      const timeDiff = now.getTime() - userCreatedAt.getTime();
+      const isNewUser = timeDiff < 60000; // Less than 1 minute old
+      
+      if (isNewUser) {
+        setShowOnboarding(true);
+        setCurrentScreen('onboarding');
+      } else {
+        setCurrentScreen('gameHome');
+      }
+    } else if (!loading) {
+      setCurrentScreen('auth');
+    }
+  }, [user, loading]);
+
+  const loadUserProgress = async () => {
+    if (!user) return;
+    
+    const progress = await gameService.getUserProgress(user.id);
+    if (progress) {
+      setGameProgress(progress);
+    }
   };
 
-  const handleRegistration = (userData: any) => {
-    setUser(userData);
-    setCurrentScreen('onboarding');
+  const handleAuth = (userData: any) => {
+    // User is now authenticated, useAuth hook will handle the state
   };
 
   const handleOnboardingComplete = () => {
+    setShowOnboarding(false);
     setCurrentScreen('gameHome');
   };
 
@@ -47,22 +78,41 @@ const Index = () => {
     setCurrentScreen('gameHome');
   };
 
-  const handleLevelComplete = (correct: boolean) => {
-    setGameProgress(prev => ({
-      ...prev,
-      totalCorrect: prev.totalCorrect + (correct ? 1 : 0),
-      totalAttempts: prev.totalAttempts + 1,
-      level: correct ? prev.level + 1 : prev.level,
-      completedLevels: correct ? prev.completedLevels + 1 : prev.completedLevels
-    }));
+  const handleLevelComplete = async (correct: boolean) => {
+    if (!user) return;
+
+    const newProgress = {
+      ...gameProgress,
+      total_correct: gameProgress.total_correct + (correct ? 1 : 0),
+      total_attempts: gameProgress.total_attempts + 1,
+      level: correct ? gameProgress.level + 1 : gameProgress.level,
+      completed_levels: correct ? gameProgress.completed_levels + 1 : gameProgress.completed_levels
+    };
+
+    setGameProgress(newProgress);
+
+    // Save to database
+    try {
+      await gameService.updateUserProgress(user.id, newProgress);
+    } catch (error) {
+      console.error('Error updating progress:', error);
+    }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
   const renderScreen = () => {
+    if (!user) {
+      return <AuthScreen language={language} onAuth={handleAuth} />;
+    }
+
     switch (currentScreen) {
-      case 'welcome':
-        return <WelcomeScreen onLanguageSelect={handleLanguageSelect} />;
-      case 'registration':
-        return <RegistrationScreen language={language} onRegistration={handleRegistration} />;
       case 'onboarding':
         return <OnboardingScreen language={language} onComplete={handleOnboardingComplete} />;
       case 'gameHome':
@@ -94,7 +144,7 @@ const Index = () => {
           />
         );
       default:
-        return <WelcomeScreen onLanguageSelect={handleLanguageSelect} />;
+        return <AuthScreen language={language} onAuth={handleAuth} />;
     }
   };
 

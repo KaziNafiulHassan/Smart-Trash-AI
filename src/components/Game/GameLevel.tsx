@@ -6,7 +6,9 @@ import { Language } from '@/pages/Index';
 import WasteBin from './WasteBin';
 import WasteItem from './WasteItem';
 import FeedbackPopup from './FeedbackPopup';
-import { wasteItems, binCategories } from '@/data/gameData';
+import { dataService } from '@/services/dataService';
+import { gameService } from '@/services/gameService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface GameLevelProps {
   language: Language;
@@ -40,6 +42,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
   onLevelComplete,
   onBackToHome
 }) => {
+  const { user } = useAuth();
   const [currentItems, setCurrentItems] = useState<any[]>([]);
   const [score, setScore] = useState(0);
   const [attempts, setAttempts] = useState(0);
@@ -47,6 +50,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [completedItems, setCompletedItems] = useState<Set<string>>(new Set());
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [gameData, setGameData] = useState<any>({ wasteItems: [], binCategories: {} });
 
   const t = texts[language];
 
@@ -78,11 +82,24 @@ const GameLevel: React.FC<GameLevelProps> = ({
   ];
 
   useEffect(() => {
-    generateLevelItems();
-  }, [level]);
+    loadGameData();
+  }, [language]);
+
+  useEffect(() => {
+    if (gameData.wasteItems.length > 0) {
+      generateLevelItems();
+    }
+  }, [level, gameData]);
+
+  const loadGameData = async () => {
+    const data = await dataService.getGameData(language);
+    setGameData(data);
+  };
 
   const generateLevelItems = () => {
-    const shuffled = [...wasteItems].sort(() => 0.5 - Math.random());
+    if (gameData.wasteItems.length === 0) return;
+    
+    const shuffled = [...gameData.wasteItems].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 3);
     setCurrentItems(selected);
     setCompletedItems(new Set());
@@ -90,8 +107,8 @@ const GameLevel: React.FC<GameLevelProps> = ({
     setAttempts(0);
   };
 
-  const handleDrop = (binId: string) => {
-    if (!draggedItem) return;
+  const handleDrop = async (binId: string) => {
+    if (!draggedItem || !user) return;
 
     const item = currentItems.find(i => i.id === draggedItem);
     if (!item) return;
@@ -120,6 +137,19 @@ const GameLevel: React.FC<GameLevelProps> = ({
     if (isCorrect) {
       setScore(prev => prev + 10);
       setCompletedItems(prev => new Set([...prev, draggedItem]));
+    }
+
+    // Save game session data
+    try {
+      await gameService.saveGameSession(user.id, {
+        level,
+        score: isCorrect ? score + 10 : score,
+        items_sorted: attempts + 1,
+        correct_sorts: isCorrect ? completedItems.size + 1 : completedItems.size,
+        accuracy: Math.round(((isCorrect ? completedItems.size + 1 : completedItems.size) / (attempts + 1)) * 100)
+      });
+    } catch (error) {
+      console.error('Error saving game session:', error);
     }
 
     setDraggedItem(null);
