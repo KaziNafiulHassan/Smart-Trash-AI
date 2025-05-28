@@ -25,24 +25,22 @@ export const dataService = {
       return { wasteItems: [], binCategories: {} };
     }
 
-    // Transform data and get image URLs
-    const transformedItems = await Promise.all(
-      wasteItems?.map(async (item) => {
-        // Get image URL from storage
-        const { data: imageData } = supabase.storage
-          .from('waste-images')
-          .getPublicUrl(`${item.id}.jpg`);
+    // Transform data and get image URLs from storage
+    const transformedItems = wasteItems?.map((item) => {
+      // Get image URL from storage using the item ID
+      const { data: imageData } = supabase.storage
+        .from('waste-images')
+        .getPublicUrl(`${item.id}.jpg`);
 
-        return {
-          id: item.id,
-          item_name: language === 'EN' ? item.item_name_en : item.item_name_de,
-          description: language === 'EN' ? item.description_en : item.description_de,
-          image_url: imageData.publicUrl,
-          category_id: item.categories?.id || '',
-          bin_type: item.categories?.bin_type || ''
-        };
-      }) || []
-    );
+      return {
+        id: item.id,
+        item_name: language === 'EN' ? item.item_name_en : item.item_name_de,
+        description: language === 'EN' ? item.description_en : item.description_de,
+        image_url: imageData.publicUrl,
+        category_id: item.categories?.id || '',
+        bin_type: item.categories?.bin_type || ''
+      };
+    }) || [];
 
     // Updated bin categories mapping for all 7 bin types
     const binCategories = {

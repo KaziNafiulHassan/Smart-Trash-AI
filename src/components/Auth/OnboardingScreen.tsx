@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
-import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/pages/Index';
-import WasteBin from '@/components/Game/WasteBin';
 import WasteItem from '@/components/Game/WasteItem';
+import WasteBin from '@/components/Game/WasteBin';
 
 interface OnboardingScreenProps {
   language: Language;
@@ -12,180 +12,130 @@ interface OnboardingScreenProps {
 
 const texts = {
   EN: {
-    title: 'Learn Waste Sorting',
-    subtitle: 'Drag items to the correct bins!',
-    step1Title: 'Meet the Bins',
-    step1Text: 'Each bin is for different types of waste',
-    step2Title: 'Try Sorting!',
-    step2Text: 'Drag the apple peel to the Bio bin',
-    step3Title: 'Great Job!',
-    step3Text: 'You\'re ready to start playing!',
-    next: 'Next',
-    back: 'Back',
-    startGame: 'Start Game',
-    correct: 'Correct! Bio waste like fruit peels goes in the brown bin.',
-    tryAgain: 'Try again! Apple peels are organic waste.'
+    welcome: 'Welcome to EcoSort!',
+    subtitle: 'Learn to sort waste correctly and help protect our environment',
+    instruction: 'Drag items to the correct bins',
+    example: 'Example: Paper goes in the blue bin',
+    getStarted: 'Get Started',
+    skipTutorial: 'Skip Tutorial'
   },
   DE: {
-    title: 'Müll Sortieren Lernen',
-    subtitle: 'Ziehe Gegenstände in die richtigen Tonnen!',
-    step1Title: 'Lerne die Tonnen kennen',
-    step1Text: 'Jede Tonne ist für verschiedene Abfallarten',
-    step2Title: 'Probiere das Sortieren!',
-    step2Text: 'Ziehe die Apfelschale in die Biotonne',
-    step3Title: 'Gut gemacht!',
-    step3Text: 'Du bist bereit zum Spielen!',
-    next: 'Weiter',
-    back: 'Zurück',
-    startGame: 'Spiel Starten',
-    correct: 'Richtig! Bioabfall wie Obstschalen gehört in die braune Tonne.',
-    tryAgain: 'Versuche es nochmal! Apfelschalen sind Bioabfall.'
+    welcome: 'Willkommen bei EcoSort!',
+    subtitle: 'Lerne Müll richtig zu trennen und hilf dabei, unsere Umwelt zu schützen',
+    instruction: 'Ziehe Gegenstände in die richtigen Tonnen',
+    example: 'Beispiel: Papier gehört in die blaue Tonne',
+    getStarted: 'Loslegen',
+    skipTutorial: 'Tutorial überspringen'
   }
 };
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ language, onComplete }) => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [draggedItem, setDraggedItem] = useState<string | null>(null);
-  const [completed, setCompleted] = useState(false);
-  const [feedback, setFeedback] = useState('');
-
   const t = texts[language];
 
-  const bins = [
-    { id: 'bio', name: language === 'EN' ? 'Bio' : 'Bio', color: 'bg-amber-600' },
-    { id: 'paper', name: language === 'EN' ? 'Paper' : 'Papier', color: 'bg-blue-500' },
-    { id: 'plastic', name: language === 'EN' ? 'Plastic' : 'Plastik', color: 'bg-yellow-500' },
-    { id: 'residual', name: language === 'EN' ? 'Residual' : 'Restmüll', color: 'bg-gray-600' }
+  // Sample items for demonstration
+  const sampleItems = [
+    {
+      id: 'paper-sample',
+      item_name: language === 'EN' ? 'Newspaper' : 'Zeitung',
+      description: language === 'EN' ? 'Old newspaper for recycling' : 'Alte Zeitung zum Recycling'
+    }
   ];
 
-  const handleDrop = (binId: string) => {
-    if (draggedItem === 'apple_peel' && binId === 'bio') {
-      setFeedback(t.correct);
-      setCompleted(true);
-    } else {
-      setFeedback(t.tryAgain);
+  const sampleBins = [
+    { 
+      id: 'paper', 
+      name: language === 'EN' ? 'Paper Bin' : 'Papier', 
+      color: 'bg-blue-500'
+    },
+    { 
+      id: 'residual', 
+      name: language === 'EN' ? 'Residual Waste Bin' : 'Restmüll', 
+      color: 'bg-gray-600'
     }
-    setDraggedItem(null);
-  };
+  ];
 
   const steps = [
     {
-      title: t.step1Title,
+      title: t.welcome,
       content: (
-        <div className="space-y-4">
-          <p className="text-center text-lg mb-6">{t.step1Text}</p>
-          <div className="grid grid-cols-2 gap-4">
-            {bins.map((bin) => (
+        <div className="text-center">
+          <div className="text-6xl mb-4">🌱</div>
+          <p className="text-blue-100 text-lg mb-6">{t.subtitle}</p>
+        </div>
+      )
+    },
+    {
+      title: t.instruction,
+      content: (
+        <div className="space-y-6">
+          <p className="text-blue-100 text-center">{t.example}</p>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            {sampleBins.map((bin) => (
               <WasteBin key={bin.id} bin={bin} />
             ))}
           </div>
-        </div>
-      )
-    },
-    {
-      title: t.step2Title,
-      content: (
-        <div className="space-y-4">
-          <p className="text-center text-lg mb-6">{t.step2Text}</p>
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            {bins.map((bin) => (
-              <WasteBin 
-                key={bin.id} 
-                bin={bin} 
-                onDrop={handleDrop}
-                isDropTarget={true}
-              />
-            ))}
-          </div>
           <div className="flex justify-center">
-            <WasteItem
-              item={{
-                id: 'apple_peel',
-                item_name: language === 'EN' ? 'Apple Peel' : 'Apfelschale',
-                emoji: '🍎'
-              }}
-              onDragStart={setDraggedItem}
-              isDraggable={true}
-            />
-          </div>
-          {feedback && (
-            <div className={`p-4 rounded-lg text-center ${
-              completed ? 'bg-green-500/20 text-green-100' : 'bg-red-500/20 text-red-100'
-            }`}>
-              {feedback}
+            <div className="w-32">
+              <WasteItem
+                item={sampleItems[0]}
+                isDraggable={false}
+              />
             </div>
-          )}
-        </div>
-      )
-    },
-    {
-      title: t.step3Title,
-      content: (
-        <div className="text-center space-y-6">
-          <div className="text-6xl mb-4">🎉</div>
-          <p className="text-lg">{t.step3Text}</p>
+          </div>
         </div>
       )
     }
   ];
 
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep(currentStep + 1);
+    } else {
+      onComplete();
+    }
+  };
+
+  const currentStepData = steps[currentStep];
+
   return (
-    <div className="min-h-screen flex flex-col p-6 text-white">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-2">{t.title}</h1>
-        <p className="text-lg text-blue-100">{t.subtitle}</p>
-        <div className="flex justify-center mt-4 space-x-2">
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-white">
+      <div className="max-w-md w-full bg-white/10 backdrop-blur-sm rounded-3xl p-8 shadow-2xl">
+        <h1 className="text-3xl font-bold text-center mb-8">
+          {currentStepData.title}
+        </h1>
+        
+        <div className="mb-8">
+          {currentStepData.content}
+        </div>
+
+        <div className="flex justify-center space-x-4">
+          <Button
+            onClick={onComplete}
+            variant="outline"
+            className="bg-white/20 hover:bg-white/30 border-white/30 text-white"
+          >
+            {t.skipTutorial}
+          </Button>
+          <Button
+            onClick={handleNext}
+            className="bg-green-500 hover:bg-green-600 text-white px-8"
+          >
+            {currentStep === steps.length - 1 ? t.getStarted : 'Next'}
+          </Button>
+        </div>
+
+        {/* Progress indicator */}
+        <div className="flex justify-center mt-6 space-x-2">
           {steps.map((_, index) => (
             <div
               key={index}
-              className={`w-3 h-3 rounded-full ${
-                index === currentStep ? 'bg-yellow-400' : 'bg-white/30'
+              className={`w-2 h-2 rounded-full ${
+                index === currentStep ? 'bg-green-400' : 'bg-white/30'
               }`}
             />
           ))}
         </div>
-      </div>
-
-      <div className="flex-1 flex flex-col justify-center">
-        <div className="bg-white/10 rounded-2xl p-6 mb-8">
-          <h2 className="text-2xl font-bold text-center mb-6">
-            {steps[currentStep].title}
-          </h2>
-          {steps[currentStep].content}
-        </div>
-      </div>
-
-      <div className="flex justify-between">
-        {currentStep > 0 && (
-          <Button
-            onClick={() => setCurrentStep(currentStep - 1)}
-            className="py-3 px-6 bg-gray-500 hover:bg-gray-600 text-white rounded-xl"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            {t.back}
-          </Button>
-        )}
-        
-        <div className="flex-1" />
-        
-        {currentStep < steps.length - 1 ? (
-          <Button
-            onClick={() => setCurrentStep(currentStep + 1)}
-            disabled={currentStep === 1 && !completed}
-            className="py-3 px-6 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-500 text-white rounded-xl"
-          >
-            {t.next}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-        ) : (
-          <Button
-            onClick={onComplete}
-            className="py-3 px-6 bg-green-500 hover:bg-green-600 text-white rounded-xl"
-          >
-            {t.startGame}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
-        )}
       </div>
     </div>
   );

@@ -58,8 +58,16 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
           </p>
 
           <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="text-3xl">
-              {feedback.item.emoji || '📦'}
+            <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100">
+              {feedback.item.image_url ? (
+                <img 
+                  src={feedback.item.image_url} 
+                  alt={feedback.item.item_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl">📦</span>
+              )}
             </div>
             <span className="text-2xl">→</span>
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feedback.bin.color}`}>
