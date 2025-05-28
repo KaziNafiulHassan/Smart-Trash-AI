@@ -14,6 +14,7 @@ interface WasteBinProps {
 
 const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   useEffect(() => {
     loadBinImage();
@@ -21,13 +22,33 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
 
   const loadBinImage = async () => {
     try {
-      const { data } = await supabase.storage
-        .from('bin-images')
-        .getPublicUrl(`${bin.id}.png`);
+      console.log('Loading bin image for:', bin.id);
       
-      if (data?.publicUrl) {
-        setImageUrl(data.publicUrl);
+      // Try different image formats
+      const formats = ['png', 'jpg', 'jpeg'];
+      
+      for (const format of formats) {
+        const { data } = await supabase.storage
+          .from('bin-images')
+          .getPublicUrl(`${bin.id}.${format}`);
+        
+        if (data?.publicUrl) {
+          console.log('Found bin image URL:', data.publicUrl);
+          
+          // Test if the image actually exists
+          try {
+            const response = await fetch(data.publicUrl, { method: 'HEAD' });
+            if (response.ok) {
+              setImageUrl(data.publicUrl);
+              return;
+            }
+          } catch (error) {
+            console.log(`Image not found with ${format} format`);
+          }
+        }
       }
+      
+      console.log('No bin image found for:', bin.id);
     } catch (error) {
       console.error('Error loading bin image:', error);
     }
@@ -46,6 +67,16 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
     }
   };
 
+  const handleImageLoad = () => {
+    setImageLoaded(true);
+  };
+
+  const handleImageError = () => {
+    console.log('Failed to load bin image, falling back to emoji');
+    setImageUrl(null);
+    setImageLoaded(false);
+  };
+
   return (
     <div
       className={`${bin.color} rounded-2xl p-2 w-20 h-20 sm:w-24 sm:h-24 flex flex-col items-center justify-center shadow-lg ${
@@ -54,12 +85,17 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
+      {imageUrl && !imageLoaded && (
+        <div className="text-lg sm:text-xl mb-1">🗑️</div>
+      )}
       {imageUrl ? (
         <img 
           src={imageUrl} 
           alt={bin.name}
           className="w-12 h-12 sm:w-14 sm:h-14 object-contain mb-1"
-          onError={() => setImageUrl(null)}
+          onLoad={handleImageLoad}
+          onError={handleImageError}
+          style={{ display: imageLoaded ? 'block' : 'none' }}
         />
       ) : (
         <div className="text-lg sm:text-xl mb-1">🗑️</div>

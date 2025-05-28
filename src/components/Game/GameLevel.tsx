@@ -191,6 +191,9 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const handleDrop = async (binId: string) => {
     if (!draggedItem || !user || !currentItem) return;
 
+    console.log('Item dropped:', currentItem);
+    console.log('Item description:', currentItem.description);
+
     setIsTimerActive(false);
     const sortTime = startTime ? Date.now() - startTime : 30000;
     setSortingTimes(prev => [...prev, sortTime]);
@@ -204,23 +207,32 @@ const GameLevel: React.FC<GameLevelProps> = ({
     let feedbackMessage = '';
     try {
       const { feedbackService } = await import('@/services/feedbackService');
+      
+      // Ensure we have the description in the correct language
+      const itemDescription = currentItem.description || '';
+      console.log('Using item description for feedback:', itemDescription);
+      
       feedbackMessage = await feedbackService.generateFeedback({
         itemName: currentItem.item_name,
-        itemDescription: currentItem.description || '',
+        itemDescription: itemDescription,
         selectedBin: bin?.name || '',
         correctBin: bins.find(b => b.id === currentItem.bin_type)?.name || '',
         isCorrect,
         language
       });
+      
+      console.log('Generated feedback message:', feedbackMessage);
     } catch (error) {
       console.error('Error generating feedback:', error);
+      // Enhanced fallback that always includes description
+      const itemDescription = currentItem.description || '';
       feedbackMessage = isCorrect 
         ? (language === 'EN' 
-          ? `Correct! ${currentItem.item_name} belongs in the ${bin?.name}.`
-          : `Richtig! ${currentItem.item_name} gehört in die ${bin?.name}.`)
+          ? `Correct! ${currentItem.item_name} belongs in the ${bin?.name}. ${itemDescription ? `Info: ${itemDescription}` : ''}`
+          : `Richtig! ${currentItem.item_name} gehört in die ${bin?.name}. ${itemDescription ? `Info: ${itemDescription}` : ''}`)
         : (language === 'EN'
-          ? `Oops! ${currentItem.item_name} doesn't belong in the ${bin?.name}.`
-          : `Ups! ${currentItem.item_name} gehört nicht in die ${bin?.name}.`);
+          ? `Oops! ${currentItem.item_name} doesn't belong in the ${bin?.name}. It should go in the ${bins.find(b => b.id === currentItem.bin_type)?.name}. ${itemDescription ? `Remember: ${itemDescription}` : ''}`
+          : `Ups! ${currentItem.item_name} gehört nicht in die ${bin?.name}. Es sollte in die ${bins.find(b => b.id === currentItem.bin_type)?.name}. ${itemDescription ? `Denk daran: ${itemDescription}` : ''}`);
     }
 
     const feedback = {
