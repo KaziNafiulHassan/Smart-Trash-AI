@@ -10,8 +10,8 @@ export const dataService = {
         id,
         item_name_en,
         item_name_de,
-        emoji,
-        confidence_threshold,
+        description_en,
+        description_de,
         categories (
           id,
           name_en,
@@ -25,14 +25,24 @@ export const dataService = {
       return { wasteItems: [], binCategories: {} };
     }
 
-    // Transform data for frontend compatibility
-    const transformedItems = wasteItems?.map(item => ({
-      id: item.id,
-      item_name: language === 'EN' ? item.item_name_en : item.item_name_de,
-      emoji: item.emoji,
-      category_id: item.categories?.id || '',
-      confidence_threshold: item.confidence_threshold
-    })) || [];
+    // Transform data and get image URLs
+    const transformedItems = await Promise.all(
+      wasteItems?.map(async (item) => {
+        // Get image URL from storage
+        const { data: imageData } = supabase.storage
+          .from('waste-images')
+          .getPublicUrl(`${item.id}.jpg`);
+
+        return {
+          id: item.id,
+          item_name: language === 'EN' ? item.item_name_en : item.item_name_de,
+          description: language === 'EN' ? item.description_en : item.description_de,
+          image_url: imageData.publicUrl,
+          category_id: item.categories?.id || '',
+          bin_type: item.categories?.bin_type || ''
+        };
+      }) || []
+    );
 
     // Updated bin categories mapping for all 7 bin types
     const binCategories = {

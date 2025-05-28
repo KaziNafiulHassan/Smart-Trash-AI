@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -57,45 +56,38 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const bins = [
     { 
       id: 'residual', 
-      name: language === 'EN' ? 'Residual Waste' : 'Restmüll', 
-      color: 'bg-gray-600',
-      categories: ['Residual Plastics', 'Residual Electronics', 'Residual Papers', 'Hygene Items', 'Inorganic Items', 'Residual Organics']
+      name: language === 'EN' ? 'Residual Waste Bin' : 'Restmüll', 
+      color: 'bg-gray-600'
     },
     { 
       id: 'paper', 
-      name: language === 'EN' ? 'Paper' : 'Papier', 
-      color: 'bg-blue-500',
-      categories: ['Paper', 'Paper Packaging', 'Cardboard']
+      name: language === 'EN' ? 'Paper Bin' : 'Papier', 
+      color: 'bg-blue-500'
     },
     { 
       id: 'bio', 
-      name: language === 'EN' ? 'Bio' : 'Bio', 
-      color: 'bg-amber-600',
-      categories: ['Food Waste', 'Organic Waste']
+      name: language === 'EN' ? 'Bio Bin' : 'Bio', 
+      color: 'bg-amber-600'
     },
     { 
       id: 'plastic', 
-      name: language === 'EN' ? 'Lightweight Packaging' : 'Leichtverpackung', 
-      color: 'bg-yellow-500',
-      categories: ['Lightweight Packaging Bin', 'Plastic', 'Metal Packaging']
+      name: language === 'EN' ? 'Lightweight Packaging Bin' : 'Leichtverpackung', 
+      color: 'bg-yellow-500'
     },
     { 
       id: 'glass', 
-      name: language === 'EN' ? 'Waste Glass' : 'Altglas', 
-      color: 'bg-green-600',
-      categories: ['Recyclable Glass']
+      name: language === 'EN' ? 'Waste Glass Container' : 'Altglas', 
+      color: 'bg-green-600'
     },
     { 
       id: 'hazardous', 
-      name: language === 'EN' ? 'Hazardous Waste' : 'Sondermüll', 
-      color: 'bg-red-600',
-      categories: ['Hazardous Waste']
+      name: language === 'EN' ? 'Hazardous Waste Mobile or Collection Points' : 'Sondermüll', 
+      color: 'bg-red-600'
     },
     { 
       id: 'bulky', 
-      name: language === 'EN' ? 'Bulky Waste' : 'Sperrmüll', 
-      color: 'bg-purple-600',
-      categories: ['Bulky Waste']
+      name: language === 'EN' ? 'Bulky Waste Container' : 'Sperrmüll', 
+      color: 'bg-purple-600'
     }
   ];
 
@@ -132,21 +124,38 @@ const GameLevel: React.FC<GameLevelProps> = ({
     if (!item) return;
 
     const bin = bins.find(b => b.id === binId);
-    const isCorrect = bin?.categories.includes(item.category_id);
+    const isCorrect = item.bin_type === binId;
 
     setAttempts(prev => prev + 1);
+
+    // Generate AI feedback using the description
+    let feedbackMessage = '';
+    try {
+      const { feedbackService } = await import('@/services/feedbackService');
+      feedbackMessage = await feedbackService.generateFeedback({
+        itemName: item.item_name,
+        itemDescription: item.description || '',
+        selectedBin: bin?.name || '',
+        correctBin: bins.find(b => b.id === item.bin_type)?.name || '',
+        isCorrect,
+        language
+      });
+    } catch (error) {
+      console.error('Error generating feedback:', error);
+      feedbackMessage = isCorrect 
+        ? (language === 'EN' 
+          ? `Correct! ${item.item_name} belongs in the ${bin?.name}.`
+          : `Richtig! ${item.item_name} gehört in die ${bin?.name}.`)
+        : (language === 'EN'
+          ? `Oops! ${item.item_name} doesn't belong in the ${bin?.name}.`
+          : `Ups! ${item.item_name} gehört nicht in die ${bin?.name}.`);
+    }
 
     const feedback = {
       correct: isCorrect,
       item: item,
       bin: bin,
-      message: isCorrect 
-        ? (language === 'EN' 
-          ? `Correct! ${item.item_name} belongs in the ${bin?.name} bin.`
-          : `Richtig! ${item.item_name} gehört in die ${bin?.name}tonne.`)
-        : (language === 'EN'
-          ? `Oops! ${item.item_name} doesn't belong in the ${bin?.name} bin.`
-          : `Ups! ${item.item_name} gehört nicht in die ${bin?.name}tonne.`)
+      message: feedbackMessage
     };
 
     setFeedbackData(feedback);

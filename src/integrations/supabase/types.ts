@@ -251,27 +251,27 @@ export type Database = {
       waste_items: {
         Row: {
           category_id: string | null
-          confidence_threshold: number | null
           created_at: string | null
-          emoji: string | null
+          description_de: string | null
+          description_en: string | null
           id: string
           item_name_de: string
           item_name_en: string
         }
         Insert: {
           category_id?: string | null
-          confidence_threshold?: number | null
           created_at?: string | null
-          emoji?: string | null
+          description_de?: string | null
+          description_en?: string | null
           id: string
           item_name_de: string
           item_name_en: string
         }
         Update: {
           category_id?: string | null
-          confidence_threshold?: number | null
           created_at?: string | null
-          emoji?: string | null
+          description_de?: string | null
+          description_en?: string | null
           id?: string
           item_name_de?: string
           item_name_en?: string
