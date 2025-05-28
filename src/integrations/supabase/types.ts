@@ -49,29 +49,29 @@ export type Database = {
         Row: {
           bin_type: Database["public"]["Enums"]["bin_type"]
           created_at: string | null
-          description_de: string | null
-          description_en: string | null
           id: string
           name_de: string
           name_en: string
+          rule_de: string | null
+          rule_en: string | null
         }
         Insert: {
           bin_type: Database["public"]["Enums"]["bin_type"]
           created_at?: string | null
-          description_de?: string | null
-          description_en?: string | null
           id: string
           name_de: string
           name_en: string
+          rule_de?: string | null
+          rule_en?: string | null
         }
         Update: {
           bin_type?: Database["public"]["Enums"]["bin_type"]
           created_at?: string | null
-          description_de?: string | null
-          description_en?: string | null
           id?: string
           name_de?: string
           name_en?: string
+          rule_de?: string | null
+          rule_en?: string | null
         }
         Relationships: []
       }
@@ -294,7 +294,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      bin_type: "bio" | "paper" | "plastic" | "residual"
+      bin_type:
+        | "bio"
+        | "paper"
+        | "plastic"
+        | "residual"
+        | "glass"
+        | "hazardous"
+        | "bulky"
       user_language: "EN" | "DE"
     }
     CompositeTypes: {
@@ -411,7 +418,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      bin_type: ["bio", "paper", "plastic", "residual"],
+      bin_type: [
+        "bio",
+        "paper",
+        "plastic",
+        "residual",
+        "glass",
+        "hazardous",
+        "bulky",
+      ],
       user_language: ["EN", "DE"],
     },
   },

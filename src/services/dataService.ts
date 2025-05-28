@@ -34,12 +34,15 @@ export const dataService = {
       confidence_threshold: item.confidence_threshold
     })) || [];
 
-    // Create bin categories mapping
+    // Updated bin categories mapping for all 7 bin types
     const binCategories = {
-      bio: ['Food Waste', 'Organic Waste'],
+      residual: ['Residual Plastics', 'Residual Electronics', 'Residual Papers', 'Hygene Items', 'Inorganic Items', 'Residual Organics'],
       paper: ['Paper', 'Paper Packaging', 'Cardboard'],
+      bio: ['Food Waste', 'Organic Waste'],
       plastic: ['Lightweight Packaging Bin', 'Plastic', 'Metal Packaging'],
-      residual: ['Residual Plastics', 'Residual Electronics', 'Residual Papers', 'Hygene Items', 'Inorganic Items', 'Residual Organics']
+      glass: ['Recyclable Glass'],
+      hazardous: ['Hazardous Waste'],
+      bulky: ['Bulky Waste']
     };
 
     return {

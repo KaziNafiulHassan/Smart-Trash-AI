@@ -56,10 +56,10 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
   const bins = [
     { 
-      id: 'bio', 
-      name: language === 'EN' ? 'Bio' : 'Bio', 
-      color: 'bg-amber-600',
-      categories: ['Food Waste', 'Organic Waste']
+      id: 'residual', 
+      name: language === 'EN' ? 'Residual Waste' : 'Restmüll', 
+      color: 'bg-gray-600',
+      categories: ['Residual Plastics', 'Residual Electronics', 'Residual Papers', 'Hygene Items', 'Inorganic Items', 'Residual Organics']
     },
     { 
       id: 'paper', 
@@ -68,16 +68,34 @@ const GameLevel: React.FC<GameLevelProps> = ({
       categories: ['Paper', 'Paper Packaging', 'Cardboard']
     },
     { 
+      id: 'bio', 
+      name: language === 'EN' ? 'Bio' : 'Bio', 
+      color: 'bg-amber-600',
+      categories: ['Food Waste', 'Organic Waste']
+    },
+    { 
       id: 'plastic', 
-      name: language === 'EN' ? 'Plastic' : 'Plastik', 
+      name: language === 'EN' ? 'Lightweight Packaging' : 'Leichtverpackung', 
       color: 'bg-yellow-500',
       categories: ['Lightweight Packaging Bin', 'Plastic', 'Metal Packaging']
     },
     { 
-      id: 'residual', 
-      name: language === 'EN' ? 'Residual' : 'Restmüll', 
-      color: 'bg-gray-600',
-      categories: ['Residual Plastics', 'Residual Electronics', 'Residual Papers', 'Hygene Items', 'Inorganic Items', 'Residual Organics']
+      id: 'glass', 
+      name: language === 'EN' ? 'Waste Glass' : 'Altglas', 
+      color: 'bg-green-600',
+      categories: ['Recyclable Glass']
+    },
+    { 
+      id: 'hazardous', 
+      name: language === 'EN' ? 'Hazardous Waste' : 'Sondermüll', 
+      color: 'bg-red-600',
+      categories: ['Hazardous Waste']
+    },
+    { 
+      id: 'bulky', 
+      name: language === 'EN' ? 'Bulky Waste' : 'Sperrmüll', 
+      color: 'bg-purple-600',
+      categories: ['Bulky Waste']
     }
   ];
 
@@ -204,8 +222,8 @@ const GameLevel: React.FC<GameLevelProps> = ({
         <p className="text-blue-100">{t.dragInstruction}</p>
       </div>
 
-      {/* Bins */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      {/* Bins - Updated grid for 7 bins */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
         {bins.map((bin) => (
           <WasteBin
             key={bin.id}
