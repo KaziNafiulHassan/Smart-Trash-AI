@@ -22,17 +22,25 @@ export interface UserProgress {
 
 export const gameService = {
   async getUserProgress(userId: string): Promise<UserProgress | null> {
+    console.log('Fetching user progress for:', userId);
+    
     const { data, error } = await supabase
       .from('user_progress')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle(); // Use maybeSingle instead of single to handle no results
 
     if (error) {
       console.error('Error fetching user progress:', error);
       return null;
     }
 
+    if (!data) {
+      console.log('No user progress found for user:', userId);
+      return null;
+    }
+
+    console.log('User progress fetched:', data);
     return data;
   },
 

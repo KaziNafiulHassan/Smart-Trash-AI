@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthScreen from '@/components/Auth/AuthScreen';
@@ -7,6 +6,7 @@ import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
 import { gameService } from '@/services/gameService';
+import { profileService } from '@/services/profileService';
 
 export type Language = 'EN' | 'DE';
 export type Screen = 'auth' | 'onboarding' | 'gameHome' | 'gameLevel' | 'profile';
@@ -28,6 +28,7 @@ const Index = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('User authenticated, loading progress...', user.id);
       // Load user progress when user is authenticated
       loadUserProgress();
       
@@ -51,13 +52,23 @@ const Index = () => {
   const loadUserProgress = async () => {
     if (!user) return;
     
+    console.log('Loading user progress for:', user.id);
+    
+    // Ensure user setup first
+    await profileService.ensureUserSetup(user.id, user.user_metadata?.name, language);
+    
     const progress = await gameService.getUserProgress(user.id);
     if (progress) {
+      console.log('Progress loaded:', progress);
       setGameProgress(progress);
+    } else {
+      console.log('No progress found, using defaults');
+      // Keep default progress if none found
     }
   };
 
   const handleAuth = (userData: any) => {
+    console.log('Auth completed for user:', userData.id);
     // User is now authenticated, useAuth hook will handle the state
   };
 

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { profileService } from '@/services/profileService';
 import { Language } from '@/pages/Index';
 
 interface AuthScreenProps {
@@ -65,6 +66,8 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth }) => {
 
     try {
       if (isSignUp) {
+        console.log('Signing up with:', { email, name, language });
+        
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -79,9 +82,16 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth }) => {
         if (error) throw error;
         
         if (data.user) {
+          console.log('User signed up:', data.user);
+          
+          // Ensure user profile and progress are created
+          await profileService.ensureUserSetup(data.user.id, name, language);
+          
           onAuth(data.user);
         }
       } else {
+        console.log('Signing in with:', email);
+        
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password
@@ -90,10 +100,16 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth }) => {
         if (error) throw error;
         
         if (data.user) {
+          console.log('User signed in:', data.user);
+          
+          // Ensure user setup exists (fallback for existing users)
+          await profileService.ensureUserSetup(data.user.id, data.user.user_metadata?.name, language);
+          
           onAuth(data.user);
         }
       }
     } catch (error: any) {
+      console.error('Auth error:', error);
       setError(error.message);
     } finally {
       setLoading(false);
