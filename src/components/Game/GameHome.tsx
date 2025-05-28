@@ -3,6 +3,7 @@ import React from 'react';
 import { Play, User, Trophy, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/pages/Index';
+import LogoutButton from './LogoutButton';
 
 interface GameHomeProps {
   language: Language;
@@ -21,7 +22,8 @@ const texts = {
     viewProfile: 'View Profile',
     weeklyGoal: 'Weekly Goal',
     itemsSorted: 'items sorted',
-    dailyStreak: 'Day Streak'
+    dailyStreak: 'Day Streak',
+    avgSortTime: 'Avg Sort Time'
   },
   DE: {
     welcome: 'Willkommen zurück',
@@ -31,7 +33,8 @@ const texts = {
     viewProfile: 'Profil Anzeigen',
     weeklyGoal: 'Wochenziel',
     itemsSorted: 'Gegenstände sortiert',
-    dailyStreak: 'Tage in Folge'
+    dailyStreak: 'Tage in Folge',
+    avgSortTime: 'Durchschn. Sortierzeit'
   }
 };
 
@@ -43,81 +46,84 @@ const GameHome: React.FC<GameHomeProps> = ({
   onViewProfile
 }) => {
   const t = texts[language];
-  const accuracy = gameProgress.totalAttempts > 0 
-    ? Math.round((gameProgress.totalCorrect / gameProgress.totalAttempts) * 100) 
+  const accuracy = gameProgress.total_attempts > 0 
+    ? Math.round((gameProgress.total_correct / gameProgress.total_attempts) * 100) 
     : 0;
 
   return (
-    <div className="min-h-screen flex flex-col p-6 text-white">
+    <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
         <div className="flex items-center space-x-3">
-          <div className="text-4xl">{user?.avatar?.emoji}</div>
+          <div className="text-3xl sm:text-4xl">{user?.avatar?.emoji || '👤'}</div>
           <div>
-            <h1 className="text-2xl font-bold">{t.welcome}</h1>
-            <p className="text-blue-200">{user?.name}</p>
+            <h1 className="text-xl sm:text-2xl font-bold">{t.welcome}</h1>
+            <p className="text-sm sm:text-base text-blue-200">{user?.name || 'Player'}</p>
           </div>
         </div>
-        <Button
-          onClick={onViewProfile}
-          className="p-3 bg-white/20 hover:bg-white/30 rounded-full"
-        >
-          <User className="w-6 h-6" />
-        </Button>
+        <div className="flex items-center space-x-2">
+          <Button
+            onClick={onViewProfile}
+            className="p-2 sm:p-3 bg-white/20 hover:bg-white/30 rounded-full"
+          >
+            <User className="w-4 h-4 sm:w-6 sm:h-6" />
+          </Button>
+          <LogoutButton className="bg-white/20 hover:bg-white/30 text-white" />
+        </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
-        <div className="bg-gradient-to-br from-blue-500/30 to-blue-600/30 p-4 rounded-2xl border border-white/20">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <div className="bg-gradient-to-br from-blue-500/30 to-blue-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
           <div className="flex items-center space-x-2 mb-2">
-            <Target className="w-5 h-5 text-blue-300" />
-            <span className="text-sm font-medium text-blue-200">{t.level}</span>
+            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-300" />
+            <span className="text-xs sm:text-sm font-medium text-blue-200">{t.level}</span>
           </div>
-          <p className="text-2xl font-bold">{gameProgress.level}</p>
+          <p className="text-xl sm:text-2xl font-bold">{gameProgress.level}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-green-500/30 to-green-600/30 p-4 rounded-2xl border border-white/20">
+        <div className="bg-gradient-to-br from-green-500/30 to-green-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
           <div className="flex items-center space-x-2 mb-2">
-            <Trophy className="w-5 h-5 text-green-300" />
-            <span className="text-sm font-medium text-green-200">{t.accuracy}</span>
+            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-green-300" />
+            <span className="text-xs sm:text-sm font-medium text-green-200">{t.accuracy}</span>
           </div>
-          <p className="text-2xl font-bold">{accuracy}%</p>
+          <p className="text-xl sm:text-2xl font-bold">{accuracy}%</p>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500/30 to-purple-600/30 p-4 rounded-2xl border border-white/20">
+        <div className="bg-gradient-to-br from-purple-500/30 to-purple-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
           <div className="flex items-center space-x-2 mb-2">
-            <span className="text-lg">🎯</span>
-            <span className="text-sm font-medium text-purple-200">{t.weeklyGoal}</span>
+            <span className="text-base sm:text-lg">🎯</span>
+            <span className="text-xs sm:text-sm font-medium text-purple-200">{t.weeklyGoal}</span>
           </div>
-          <p className="text-lg font-bold">{gameProgress.totalCorrect}/50</p>
+          <p className="text-base sm:text-lg font-bold">{gameProgress.total_correct}/50</p>
           <p className="text-xs text-purple-200">{t.itemsSorted}</p>
         </div>
 
-        <div className="bg-gradient-to-br from-orange-500/30 to-orange-600/30 p-4 rounded-2xl border border-white/20">
+        <div className="bg-gradient-to-br from-orange-500/30 to-orange-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
           <div className="flex items-center space-x-2 mb-2">
-            <span className="text-lg">🔥</span>
-            <span className="text-sm font-medium text-orange-200">{t.dailyStreak}</span>
+            <span className="text-base sm:text-lg">🔥</span>
+            <span className="text-xs sm:text-sm font-medium text-orange-200">{t.dailyStreak}</span>
           </div>
-          <p className="text-2xl font-bold">7</p>
+          <p className="text-xl sm:text-2xl font-bold">{gameProgress.current_streak}</p>
         </div>
       </div>
 
       {/* Recent Achievements */}
-      <div className="bg-white/10 rounded-2xl p-6 mb-8">
-        <h3 className="text-lg font-semibold mb-4">Recent Achievements</h3>
+      <div className="bg-white/10 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
+        <h3 className="text-base sm:text-lg font-semibold mb-4">Recent Achievements</h3>
         <div className="space-y-3">
           <div className="flex items-center space-x-3 bg-yellow-500/20 p-3 rounded-lg">
-            <span className="text-2xl">🏆</span>
+            <span className="text-xl sm:text-2xl">🏆</span>
             <div>
-              <p className="font-medium">Eco Warrior</p>
-              <p className="text-sm text-yellow-200">Sorted 25 items correctly</p>
+              <p className="text-sm sm:text-base font-medium">Eco Warrior</p>
+              <p className="text-xs sm:text-sm text-yellow-200">Sorted 25 items correctly</p>
             </div>
           </div>
           <div className="flex items-center space-x-3 bg-green-500/20 p-3 rounded-lg">
-            <span className="text-2xl">🌱</span>
+            <span className="text-xl sm:text-2xl">🌱</span>
             <div>
-              <p className="font-medium">Bio Expert</p>
-              <p className="text-sm text-green-200">Perfect bio waste sorting</p>
+              <p className="text-sm sm:text-base font-medium">Bio Expert</p>
+              <p className="text-xs sm:text-sm text-green-200">Perfect bio waste sorting</p>
             </div>
           </div>
         </div>
@@ -127,17 +133,17 @@ const GameHome: React.FC<GameHomeProps> = ({
       <div className="space-y-4 mt-auto">
         <Button
           onClick={onPlayGame}
-          className="w-full py-4 text-lg font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
+          className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
         >
-          <Play className="w-6 h-6 mr-2" />
+          <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
           {t.playGame}
         </Button>
 
         <Button
           onClick={onViewProfile}
-          className="w-full py-4 text-lg font-semibold bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/30 transition-all duration-200 hover:scale-105"
+          className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/30 transition-all duration-200 hover:scale-105"
         >
-          <User className="w-6 h-6 mr-2" />
+          <User className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
           {t.viewProfile}
         </Button>
       </div>

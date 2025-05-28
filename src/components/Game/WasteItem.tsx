@@ -27,33 +27,32 @@ const WasteItem: React.FC<WasteItemProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-3xl p-6 shadow-xl flex flex-col items-center justify-center min-h-[140px] w-36 ${
+      className={`bg-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center justify-center min-h-[180px] sm:min-h-[220px] w-44 sm:w-52 ${
         isDraggable ? 'cursor-move hover:scale-105' : 'cursor-default'
       } ${isCompleted ? 'opacity-50 bg-green-100' : ''} transition-all duration-200`}
       draggable={isDraggable}
       onDragStart={handleDragStart}
     >
-      <div className="w-20 h-20 mb-3 flex items-center justify-center">
+      <div className="w-24 h-24 sm:w-32 sm:h-32 mb-4 flex items-center justify-center">
         {item.image_url ? (
           <img 
             src={item.image_url} 
             alt={item.item_name}
-            className="w-full h-full object-cover rounded-xl"
+            className="w-full h-full object-contain rounded-xl"
             onError={(e) => {
-              // Fallback to a default icon if image fails to load
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
               target.nextElementSibling?.classList.remove('hidden');
             }}
           />
         ) : null}
-        <div className="text-4xl hidden">📦</div>
+        <div className="text-5xl sm:text-6xl hidden">📦</div>
       </div>
-      <p className="text-gray-800 font-semibold text-sm text-center leading-tight">
+      <p className="text-gray-800 font-semibold text-sm sm:text-base text-center leading-tight">
         {item.item_name}
       </p>
       {isCompleted && (
-        <div className="text-green-500 text-2xl mt-2">✓</div>
+        <div className="text-green-500 text-3xl mt-3">✓</div>
       )}
     </div>
   );
