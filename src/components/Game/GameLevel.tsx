@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,7 +63,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
     { 
       id: 'paper', 
       name: language === 'EN' ? 'Paper Bin' : 'Papier', 
-      color: 'bg-blue-500'
+      color: 'bg-red-500'
     },
     { 
       id: 'bio', 
@@ -82,7 +83,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
     { 
       id: 'hazardous', 
       name: language === 'EN' ? 'Hazardous Waste Mobile or Collection Points' : 'Sondermüll', 
-      color: 'bg-red-600'
+      color: 'bg-orange-600'
     },
     { 
       id: 'bulky', 
@@ -227,25 +228,13 @@ const GameLevel: React.FC<GameLevelProps> = ({
       </div>
 
       {/* Instructions */}
-      <div className="text-center mb-6">
+      <div className="text-center mb-8">
         <p className="text-blue-100">{t.dragInstruction}</p>
       </div>
 
-      {/* Bins - Updated grid for 7 bins */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-8">
-        {bins.map((bin) => (
-          <WasteBin
-            key={bin.id}
-            bin={bin}
-            onDrop={handleDrop}
-            isDropTarget={true}
-          />
-        ))}
-      </div>
-
-      {/* Items */}
-      <div className="flex-1 flex flex-col justify-center">
-        <div className="grid grid-cols-3 gap-4 mb-6">
+      {/* Items - Now positioned at the top */}
+      <div className="flex justify-center mb-12">
+        <div className="grid grid-cols-3 gap-6 max-w-2xl">
           {currentItems.map((item) => (
             <WasteItem
               key={item.id}
@@ -255,6 +244,34 @@ const GameLevel: React.FC<GameLevelProps> = ({
               isCompleted={completedItems.has(item.id)}
             />
           ))}
+        </div>
+      </div>
+
+      {/* Bins - Arranged in two centered rows */}
+      <div className="flex-1 flex flex-col justify-center">
+        <div className="space-y-4">
+          {/* First row - 4 bins */}
+          <div className="flex justify-center gap-3">
+            {bins.slice(0, 4).map((bin) => (
+              <WasteBin
+                key={bin.id}
+                bin={bin}
+                onDrop={handleDrop}
+                isDropTarget={true}
+              />
+            ))}
+          </div>
+          {/* Second row - 3 bins */}
+          <div className="flex justify-center gap-3">
+            {bins.slice(4, 7).map((bin) => (
+              <WasteBin
+                key={bin.id}
+                bin={bin}
+                onDrop={handleDrop}
+                isDropTarget={true}
+              />
+            ))}
+          </div>
         </div>
       </div>
 

@@ -27,14 +27,14 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
 
   return (
     <div
-      className={`${bin.color} rounded-2xl p-4 min-h-[120px] flex flex-col items-center justify-center shadow-lg ${
+      className={`${bin.color} rounded-2xl p-3 w-24 h-24 flex flex-col items-center justify-center shadow-lg ${
         isDropTarget ? 'border-2 border-dashed border-white/50' : ''
-      } transition-all duration-200 hover:scale-105`}
+      } transition-all duration-200 hover:scale-105 cursor-pointer`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
-      <div className="text-4xl mb-2">🗑️</div>
-      <h3 className="text-white font-bold text-lg text-center">{bin.name}</h3>
+      <div className="text-xl mb-1">🗑️</div>
+      <h3 className="text-white font-bold text-xs text-center leading-tight">{bin.name}</h3>
     </div>
   );
 };
