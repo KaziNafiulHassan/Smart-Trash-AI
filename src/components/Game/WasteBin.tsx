@@ -24,31 +24,36 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
     try {
       console.log('Loading bin image for:', bin.id);
       
-      // Try different image formats
+      // Try different image formats and naming conventions
       const formats = ['png', 'jpg', 'jpeg'];
+      const namingVariations = [bin.id, bin.id.toLowerCase(), bin.id.toUpperCase()];
       
-      for (const format of formats) {
-        const { data } = await supabase.storage
-          .from('bin-images')
-          .getPublicUrl(`${bin.id}.${format}`);
-        
-        if (data?.publicUrl) {
-          console.log('Found bin image URL:', data.publicUrl);
+      for (const name of namingVariations) {
+        for (const format of formats) {
+          const { data } = await supabase.storage
+            .from('bin-images')
+            .getPublicUrl(`${name}.${format}`);
           
-          // Test if the image actually exists
-          try {
-            const response = await fetch(data.publicUrl, { method: 'HEAD' });
-            if (response.ok) {
-              setImageUrl(data.publicUrl);
-              return;
+          if (data?.publicUrl) {
+            console.log('Trying bin image URL:', data.publicUrl);
+            
+            // Test if the image actually exists
+            try {
+              const response = await fetch(data.publicUrl, { method: 'HEAD' });
+              if (response.ok) {
+                console.log('Found working bin image:', data.publicUrl);
+                setImageUrl(data.publicUrl);
+                return;
+              }
+            } catch (error) {
+              console.log(`Image not found: ${name}.${format}`);
             }
-          } catch (error) {
-            console.log(`Image not found with ${format} format`);
           }
         }
       }
       
       console.log('No bin image found for:', bin.id);
+      console.log('Available naming variations tried:', namingVariations);
     } catch (error) {
       console.error('Error loading bin image:', error);
     }
@@ -68,18 +73,19 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
   };
 
   const handleImageLoad = () => {
+    console.log('Bin image loaded successfully for:', bin.id);
     setImageLoaded(true);
   };
 
   const handleImageError = () => {
-    console.log('Failed to load bin image, falling back to emoji');
+    console.log('Failed to load bin image, falling back to emoji for:', bin.id);
     setImageUrl(null);
     setImageLoaded(false);
   };
 
   return (
     <div
-      className={`${bin.color} rounded-2xl p-2 w-20 h-20 sm:w-24 sm:h-24 flex flex-col items-center justify-center shadow-lg ${
+      className={`${bin.color} dark:${bin.color.replace('bg-', 'bg-opacity-80 bg-')} rounded-2xl p-2 w-20 h-20 sm:w-24 sm:h-24 flex flex-col items-center justify-center shadow-lg ${
         isDropTarget ? 'border-2 border-dashed border-white/50 scale-105' : ''
       } transition-all duration-200 hover:scale-105 cursor-pointer`}
       onDragOver={handleDragOver}

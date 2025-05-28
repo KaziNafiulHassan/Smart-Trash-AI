@@ -27,9 +27,9 @@ const WasteItem: React.FC<WasteItemProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-3xl p-6 sm:p-8 shadow-xl flex flex-col items-center justify-center min-h-[180px] sm:min-h-[220px] w-44 sm:w-52 ${
-        isDraggable ? 'cursor-move hover:scale-105' : 'cursor-default'
-      } ${isCompleted ? 'opacity-50 bg-green-100' : ''} transition-all duration-200`}
+      className={`bg-white dark:bg-gray-800 dark:neon-border rounded-3xl p-6 sm:p-8 shadow-xl dark:shadow-purple-500/20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[220px] w-44 sm:w-52 ${
+        isDraggable ? 'cursor-move hover:scale-105 dark:hover:neon-glow' : 'cursor-default'
+      } ${isCompleted ? 'opacity-50 bg-green-100 dark:bg-green-900/30' : ''} transition-all duration-200`}
       draggable={isDraggable}
       onDragStart={handleDragStart}
     >
@@ -48,11 +48,11 @@ const WasteItem: React.FC<WasteItemProps> = ({
         ) : null}
         <div className="text-5xl sm:text-6xl hidden">📦</div>
       </div>
-      <p className="text-gray-800 font-semibold text-sm sm:text-base text-center leading-tight">
+      <p className="text-gray-800 dark:text-gray-200 dark:neon-text font-semibold text-sm sm:text-base text-center leading-tight">
         {item.item_name}
       </p>
       {isCompleted && (
-        <div className="text-green-500 text-3xl mt-3">✓</div>
+        <div className="text-green-500 dark:text-green-400 text-3xl mt-3">✓</div>
       )}
     </div>
   );

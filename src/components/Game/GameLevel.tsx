@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, RotateCcw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +6,7 @@ import WasteBin from './WasteBin';
 import WasteItem from './WasteItem';
 import FeedbackPopup from './FeedbackPopup';
 import LogoutButton from './LogoutButton';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
@@ -66,37 +66,37 @@ const GameLevel: React.FC<GameLevelProps> = ({
     { 
       id: 'residual', 
       name: language === 'EN' ? 'Residual Waste Bin' : 'Restmüll', 
-      color: 'bg-gray-600'
+      color: 'bg-gray-600 dark:bg-gray-800 dark:neon-glow'
     },
     { 
       id: 'paper', 
       name: language === 'EN' ? 'Paper Bin' : 'Papier', 
-      color: 'bg-red-500'
+      color: 'bg-red-500 dark:bg-red-800 dark:neon-glow'
     },
     { 
       id: 'bio', 
       name: language === 'EN' ? 'Bio Bin' : 'Bio', 
-      color: 'bg-amber-600'
+      color: 'bg-amber-600 dark:bg-amber-800 dark:neon-glow'
     },
     { 
       id: 'plastic', 
       name: language === 'EN' ? 'Lightweight Packaging Bin' : 'Leichtverpackung', 
-      color: 'bg-yellow-500'
+      color: 'bg-yellow-500 dark:bg-yellow-700 dark:neon-glow'
     },
     { 
       id: 'glass', 
       name: language === 'EN' ? 'Waste Glass Container' : 'Altglas', 
-      color: 'bg-green-600'
+      color: 'bg-green-600 dark:bg-green-800 dark:neon-glow'
     },
     { 
       id: 'hazardous', 
       name: language === 'EN' ? 'Hazardous Waste Mobile or Collection Points' : 'Sondermüll', 
-      color: 'bg-orange-600'
+      color: 'bg-orange-600 dark:bg-orange-800 dark:neon-glow'
     },
     { 
       id: 'bulky', 
       name: language === 'EN' ? 'Bulky Waste Container' : 'Sperrmüll', 
-      color: 'bg-purple-600'
+      color: 'bg-purple-600 dark:bg-purple-800 dark:neon-glow'
     }
   ];
 
@@ -281,25 +281,25 @@ const GameLevel: React.FC<GameLevelProps> = ({
     setStartTime(null);
   };
 
-  const timerColor = timer <= 10 ? 'text-red-400' : timer <= 20 ? 'text-yellow-400' : 'text-green-400';
+  const timerColor = timer <= 10 ? 'text-red-400 dark:text-red-300' : timer <= 20 ? 'text-yellow-400 dark:text-yellow-300' : 'text-green-400 dark:text-green-300';
 
   return (
-    <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white">
+    <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-purple-900">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <Button
           onClick={onBackToHome}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-full"
+          className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
         >
           <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
         </Button>
         
         <div className="text-center">
-          <h1 className="text-xl sm:text-2xl font-bold">{t.level} {level}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold dark:neon-text">{t.level} {level}</h1>
           <div className="flex items-center justify-center space-x-4 mt-1">
             <div className="flex items-center space-x-1">
-              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
-              <span className="text-sm sm:text-lg font-semibold">{score}</span>
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 dark:text-yellow-300" />
+              <span className="text-sm sm:text-lg font-semibold dark:text-cyan-300">{score}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -309,20 +309,21 @@ const GameLevel: React.FC<GameLevelProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          <ThemeToggle />
           <Button
             onClick={resetLevel}
-            className="p-2 bg-white/20 hover:bg-white/30 rounded-full"
+            className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
           >
             <RotateCcw className="w-4 h-4 sm:w-6 sm:h-6" />
           </Button>
-          <LogoutButton className="bg-white/20 hover:bg-white/30 text-white" />
+          <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
         </div>
       </div>
 
       {/* Instructions */}
       <div className="text-center mb-6 sm:mb-8">
-        <p className="text-sm sm:text-base text-blue-100">{t.dragInstruction}</p>
-        <p className="text-xs sm:text-sm text-blue-200 mt-1">
+        <p className="text-sm sm:text-base text-blue-100 dark:text-cyan-200">{t.dragInstruction}</p>
+        <p className="text-xs sm:text-sm text-blue-200 dark:text-cyan-300 mt-1">
           Item {currentItemIndex + 1} of {allItems.length}
         </p>
       </div>
