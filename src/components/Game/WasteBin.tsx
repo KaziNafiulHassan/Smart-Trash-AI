@@ -13,6 +13,7 @@ interface WasteBinProps {
 
 const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [imageUrl, setImageUrl] = useState<string>('');
 
   useEffect(() => {
     // Listen for custom touch drop events
@@ -28,6 +29,20 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget }) => {
       document.removeEventListener('touchDrop', handleTouchDrop as EventListener);
     };
   }, [bin.id, onDrop]);
+
+  useEffect(() => {
+    // Load bin image from Supabase storage
+    const loadBinImage = async () => {
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data } = supabase.storage
+        .from('waste-images')
+        .getPublicUrl(`bins/${bin.id}.jpg`);
+      
+      setImageUrl(data.publicUrl);
+    };
+
+    loadBinImage();
+  }, [bin.id]);
 
   const handleDragOver = (e: React.DragEvent) => {
     if (!isDropTarget) return;
@@ -55,17 +70,22 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget }) => {
           : 'border-white/30 dark:border-gray-600'
       } ${
         isDropTarget ? 'cursor-pointer hover:scale-105' : ''
-      }`}
+      } overflow-hidden`}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <div className="text-center p-2">
-        <div className="text-2xl sm:text-3xl mb-1">🗑️</div>
-        <p className="text-xs sm:text-sm font-medium text-white dark:text-gray-100 leading-tight">
-          {bin.name}
-        </p>
-      </div>
+      {imageUrl && (
+        <img 
+          src={imageUrl} 
+          alt={bin.name}
+          className="w-full h-full object-cover rounded-2xl"
+          onError={() => {
+            // Fallback if image doesn't load
+            console.log(`Failed to load image for bin: ${bin.id}`);
+          }}
+        />
+      )}
       
       {isHovered && (
         <div className="absolute inset-0 rounded-2xl bg-yellow-400/20 dark:bg-yellow-300/20 border-2 border-yellow-400 dark:border-yellow-300 animate-pulse" />
