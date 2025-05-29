@@ -27,13 +27,13 @@ const WasteItem: React.FC<WasteItemProps> = ({
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 dark:neon-border rounded-3xl p-6 sm:p-8 shadow-xl dark:shadow-purple-500/20 flex flex-col items-center justify-center min-h-[180px] sm:min-h-[220px] w-44 sm:w-52 ${
+      className={`bg-white dark:bg-gray-800 dark:neon-border rounded-3xl p-8 sm:p-10 shadow-xl dark:shadow-purple-500/20 flex flex-col items-center justify-center min-h-[250px] sm:min-h-[300px] w-60 sm:w-72 ${
         isDraggable ? 'cursor-move hover:scale-105 dark:hover:neon-glow' : 'cursor-default'
       } ${isCompleted ? 'opacity-50 bg-green-100 dark:bg-green-900/30' : ''} transition-all duration-200`}
       draggable={isDraggable}
       onDragStart={handleDragStart}
     >
-      <div className="w-24 h-24 sm:w-32 sm:h-32 mb-4 flex items-center justify-center">
+      <div className="w-32 h-32 sm:w-40 sm:h-40 mb-6 flex items-center justify-center">
         {item.image_url ? (
           <img 
             src={item.image_url} 
@@ -46,9 +46,9 @@ const WasteItem: React.FC<WasteItemProps> = ({
             }}
           />
         ) : null}
-        <div className="text-5xl sm:text-6xl hidden">📦</div>
+        <div className="text-6xl sm:text-7xl hidden">📦</div>
       </div>
-      <p className="text-gray-800 dark:text-gray-200 dark:neon-text font-semibold text-sm sm:text-base text-center leading-tight">
+      <p className="text-gray-800 dark:text-gray-200 dark:neon-text font-semibold text-base sm:text-lg text-center leading-tight">
         {item.item_name}
       </p>
       {isCompleted && (

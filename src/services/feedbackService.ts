@@ -18,8 +18,8 @@ export const feedbackService = {
       const wasCorrectString = isCorrect ? "Yes" : "No";
       
       const systemPrompt = language === 'EN' 
-        ? `You are EcoSort AI, a friendly and helpful waste sorting assistant for Magdeburg, Germany. Your goal is to provide clear, concise, and encouraging educational feedback to users. Always refer to the bin by its name. Keep explanations to 1-3 sentences. Use the information from the 'description' of the waste item.`
-        : `Du bist EcoSort AI, ein freundlicher und hilfsreicher Mülltrennungsassistent für Magdeburg, Deutschland. Dein Ziel ist es, den Benutzern klares, prägnantes und ermutigendes Bildungsfeedback zu geben. Beziehe dich immer auf die Tonne mit ihrem Namen. Halte Erklärungen bei 1-3 Sätzen. Nutze die Informationen aus der 'Beschreibung' des Müllgegenstandes.`;
+        ? `You are EcoSort AI, a friendly and helpful waste sorting assistant for Magdeburg, Germany. Your goal is to provide clear, concise, and encouraging educational feedback to users. Always refer to the bin by its name. Keep explanations to 1-3 sentences. Use the information from the 'description' of the waste item. When providing tips, format them on a new line starting with "💡 Tip:" followed by the tip content.`
+        : `Du bist EcoSort AI, ein freundlicher und hilfsreicher Mülltrennungsassistent für Magdeburg, Deutschland. Dein Ziel ist es, den Benutzern klares, prägnantes und ermutigendes Bildungsfeedback zu geben. Beziehe dich immer auf die Tonne mit ihrem Namen. Halte Erklärungen bei 1-3 Sätzen. Nutze die Informationen aus der 'Beschreibung' des Müllgegenstandes. Wenn du Tipps gibst, formatiere sie in einer neuen Zeile beginnend mit "💡 Tipp:" gefolgt vom Tipp-Inhalt.`;
 
       const userPrompt = language === 'EN'
         ? `A user has just interacted with a waste item. Here's the information:
@@ -30,7 +30,7 @@ export const feedbackService = {
 Scenario: Game Sorting
 - User attempted to sort this item into the '${selectedBin}' bin.
 - Was the user's sort correct? ${wasCorrectString} ("Yes" or "No")
-Please provide feedback for the user based on this game sorting scenario. If the sort was correct, praise the user and briefly reiterate why it's correct, possibly adding a small relevant tip from the item's description. If the sort was incorrect, gently correct the user. Explain why their choice was not right for this item and clearly state why it belongs in the correct bin, referencing the item's description or the general rule.`
+Please provide feedback for the user based on this game sorting scenario. If the sort was correct, praise the user and briefly reiterate why it's correct, possibly adding a small relevant tip from the item's description on a new line with "💡 Tip:". If the sort was incorrect, gently correct the user. Explain why their choice was not right for this item and clearly state why it belongs in the correct bin, referencing the item's description or the general rule, and add a tip on a new line with "💡 Tip:".`
         : `Ein Benutzer hat gerade mit einem Müllgegenstand interagiert. Hier sind die Informationen:
 - Gegenstand Name: ${itemName}
 - Eigene Beschreibung des Gegenstandes: ${itemDescription}
@@ -39,7 +39,7 @@ Please provide feedback for the user based on this game sorting scenario. If the
 Szenario: Spiel-Sortierung
 - Benutzer hat versucht, diesen Gegenstand in die '${selectedBin}' Tonne zu sortieren.
 - War die Sortierung des Benutzers korrekt? ${wasCorrectString} ("Ja" oder "Nein")
-Bitte gib Feedback für den Benutzer basierend auf diesem Spiel-Sortierungsszenario. Wenn die Sortierung korrekt war, lobe den Benutzer und wiederhole kurz, warum es richtig ist, möglicherweise mit einem kleinen relevanten Tipp aus der Beschreibung des Gegenstandes. Wenn die Sortierung falsch war, korrigiere den Benutzer sanft. Erkläre, warum ihre Wahl für diesen Gegenstand nicht richtig war und erkläre klar, warum er in die richtige Tonne gehört, unter Bezugnahme auf die Beschreibung des Gegenstandes oder die allgemeine Regel.`;
+Bitte gib Feedback für den Benutzer basierend auf diesem Spiel-Sortierungsszenario. Wenn die Sortierung korrekt war, lobe den Benutzer und wiederhole kurz, warum es richtig ist, möglicherweise mit einem kleinen relevanten Tipp aus der Beschreibung des Gegenstandes in einer neuen Zeile mit "💡 Tipp:". Wenn die Sortierung falsch war, korrigiere den Benutzer sanft. Erkläre, warum ihre Wahl für diesen Gegenstand nicht richtig war und erkläre klar, warum er in die richtige Tonne gehört, unter Bezugnahme auf die Beschreibung des Gegenstandes oder die allgemeine Regel, und füge einen Tipp in einer neuen Zeile mit "💡 Tipp:" hinzu.`;
 
       console.log('Making LLM API request to:', 'https://ai.h2.de/llm');
       console.log('Request payload:', {
@@ -104,12 +104,12 @@ Bitte gib Feedback für den Benutzer basierend auf diesem Spiel-Sortierungsszena
     
     if (isCorrect) {
       return language === 'EN' 
-        ? `Excellent! ${itemName} belongs in the ${correctBin}. ${itemDescription ? `Tip: ${itemDescription}` : 'Great job with waste sorting!'}`
-        : `Ausgezeichnet! ${itemName} gehört in die ${correctBin}. ${itemDescription ? `Tipp: ${itemDescription}` : 'Großartige Arbeit beim Mülltrennen!'}`;
+        ? `Excellent! ✅ ${itemName} belongs in the ${correctBin}.\n\n💡 Tip: ${itemDescription || 'Great job with waste sorting!'}`
+        : `Ausgezeichnet! ✅ ${itemName} gehört in die ${correctBin}.\n\n💡 Tipp: ${itemDescription || 'Großartige Arbeit beim Mülltrennen!'}`;
     } else {
       return language === 'EN'
-        ? `Not quite right. ${itemName} doesn't belong in the ${selectedBin}. It should go in the ${correctBin}. ${itemDescription ? `Remember: ${itemDescription}` : 'Keep learning!'}`
-        : `Nicht ganz richtig. ${itemName} gehört nicht in die ${selectedBin}. Es sollte in die ${correctBin}. ${itemDescription ? `Denk daran: ${itemDescription}` : 'Weiter lernen!'}`;
+        ? `Not quite right. ❌ ${itemName} doesn't belong in the ${selectedBin}. It should go in the ${correctBin}.\n\n💡 Tip: ${itemDescription || 'Keep learning about proper waste sorting!'}`
+        : `Nicht ganz richtig. ❌ ${itemName} gehört nicht in die ${selectedBin}. Es sollte in die ${correctBin}.\n\n💡 Tipp: ${itemDescription || 'Weiter lernen über richtige Mülltrennung!'}`;
     }
   }
 };

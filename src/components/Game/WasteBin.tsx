@@ -85,28 +85,27 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
 
   return (
     <div
-      className={`${bin.color} dark:${bin.color.replace('bg-', 'bg-opacity-80 bg-')} rounded-2xl p-2 w-20 h-20 sm:w-24 sm:h-24 flex flex-col items-center justify-center shadow-lg ${
+      className={`${bin.color} dark:${bin.color.replace('bg-', 'bg-opacity-80 bg-')} rounded-2xl p-3 w-28 h-28 sm:w-36 sm:h-36 flex items-center justify-center shadow-lg ${
         isDropTarget ? 'border-2 border-dashed border-white/50 scale-105' : ''
       } transition-all duration-200 hover:scale-105 cursor-pointer`}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
     >
       {imageUrl && !imageLoaded && (
-        <div className="text-lg sm:text-xl mb-1">🗑️</div>
+        <div className="text-2xl sm:text-3xl">🗑️</div>
       )}
       {imageUrl ? (
         <img 
           src={imageUrl} 
           alt={bin.name}
-          className="w-12 h-12 sm:w-14 sm:h-14 object-contain mb-1"
+          className="w-20 h-20 sm:w-28 sm:h-28 object-contain"
           onLoad={handleImageLoad}
           onError={handleImageError}
           style={{ display: imageLoaded ? 'block' : 'none' }}
         />
       ) : (
-        <div className="text-lg sm:text-xl mb-1">🗑️</div>
+        <div className="text-2xl sm:text-3xl">🗑️</div>
       )}
-      <h3 className="text-white font-bold text-xs text-center leading-tight">{bin.name}</h3>
     </div>
   );
 };

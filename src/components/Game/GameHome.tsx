@@ -1,151 +1,80 @@
-
 import React from 'react';
-import { Play, User, Trophy, Target } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/pages/Index';
 import LogoutButton from './LogoutButton';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 interface GameHomeProps {
   language: Language;
-  user: any;
-  gameProgress: any;
-  onPlayGame: () => void;
-  onViewProfile: () => void;
+  onStartLevel: (level: number) => void;
+  onOpenProfile: () => void;
 }
 
 const texts = {
   EN: {
-    welcome: 'Welcome back',
-    level: 'Level',
-    accuracy: 'Accuracy',
-    playGame: 'Play Game',
-    viewProfile: 'View Profile',
-    weeklyGoal: 'Weekly Goal',
-    itemsSorted: 'items sorted',
-    dailyStreak: 'Day Streak',
-    avgSortTime: 'Avg Sort Time'
+    title: 'EcoSort Game',
+    subtitle: 'Learn to sort waste correctly!',
+    selectLevel: 'Select a Level',
+    profile: 'View Profile',
+    instructions: 'Drag the waste item to the correct bin. Earn points for correct sorts. Improve your knowledge of waste sorting in Magdeburg!'
   },
   DE: {
-    welcome: 'Willkommen zurück',
-    level: 'Level',
-    accuracy: 'Genauigkeit',
-    playGame: 'Spiel Spielen',
-    viewProfile: 'Profil Anzeigen',
-    weeklyGoal: 'Wochenziel',
-    itemsSorted: 'Gegenstände sortiert',
-    dailyStreak: 'Tage in Folge',
-    avgSortTime: 'Durchschn. Sortierzeit'
+    title: 'EcoSort Spiel',
+    subtitle: 'Lerne, Müll richtig zu trennen!',
+    selectLevel: 'Wähle ein Level',
+    profile: 'Profil Anzeigen',
+    instructions: 'Ziehe den Müllgegenstand in die richtige Tonne. Verdiene Punkte für korrekte Sortierungen. Verbessere dein Wissen über Mülltrennung in Magdeburg!'
   }
 };
 
-const GameHome: React.FC<GameHomeProps> = ({
-  language,
-  user,
-  gameProgress,
-  onPlayGame,
-  onViewProfile
-}) => {
+const GameHome: React.FC<GameHomeProps> = ({ language, onStartLevel, onOpenProfile }) => {
   const t = texts[language];
-  const accuracy = gameProgress.total_attempts > 0 
-    ? Math.round((gameProgress.total_correct / gameProgress.total_attempts) * 100) 
-    : 0;
 
   return (
-    <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6 sm:mb-8">
-        <div className="flex items-center space-x-3">
-          <div className="text-3xl sm:text-4xl">{user?.avatar?.emoji || '👤'}</div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">{t.welcome}</h1>
-            <p className="text-sm sm:text-base text-blue-200">{user?.name || 'Player'}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            onClick={onViewProfile}
-            className="p-2 sm:p-3 bg-white/20 hover:bg-white/30 rounded-full"
-          >
-            <User className="w-4 h-4 sm:w-6 sm:h-6" />
-          </Button>
-          <LogoutButton className="bg-white/20 hover:bg-white/30 text-white" />
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 text-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-purple-900">
+      {/* Header with theme toggle and logout */}
+      <div className="absolute top-4 right-4 flex items-center space-x-2">
+        <ThemeToggle />
+        <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-6 sm:mb-8">
-        <div className="bg-gradient-to-br from-blue-500/30 to-blue-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
-          <div className="flex items-center space-x-2 mb-2">
-            <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-300" />
-            <span className="text-xs sm:text-sm font-medium text-blue-200">{t.level}</span>
-          </div>
-          <p className="text-xl sm:text-2xl font-bold">{gameProgress.level}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-green-500/30 to-green-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
-          <div className="flex items-center space-x-2 mb-2">
-            <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-green-300" />
-            <span className="text-xs sm:text-sm font-medium text-green-200">{t.accuracy}</span>
-          </div>
-          <p className="text-xl sm:text-2xl font-bold">{accuracy}%</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-purple-500/30 to-purple-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-base sm:text-lg">🎯</span>
-            <span className="text-xs sm:text-sm font-medium text-purple-200">{t.weeklyGoal}</span>
-          </div>
-          <p className="text-base sm:text-lg font-bold">{gameProgress.total_correct}/50</p>
-          <p className="text-xs text-purple-200">{t.itemsSorted}</p>
-        </div>
-
-        <div className="bg-gradient-to-br from-orange-500/30 to-orange-600/30 p-3 sm:p-4 rounded-2xl border border-white/20">
-          <div className="flex items-center space-x-2 mb-2">
-            <span className="text-base sm:text-lg">🔥</span>
-            <span className="text-xs sm:text-sm font-medium text-orange-200">{t.dailyStreak}</span>
-          </div>
-          <p className="text-xl sm:text-2xl font-bold">{gameProgress.current_streak}</p>
-        </div>
+      {/* Game title */}
+      <div className="text-center mb-8 sm:mb-12">
+        <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold mb-4 dark:neon-text">{t.title}</h1>
+        <p className="text-lg sm:text-xl md:text-2xl text-blue-100 dark:text-cyan-200">{t.subtitle}</p>
       </div>
 
-      {/* Recent Achievements */}
-      <div className="bg-white/10 rounded-2xl p-4 sm:p-6 mb-6 sm:mb-8">
-        <h3 className="text-base sm:text-lg font-semibold mb-4">Recent Achievements</h3>
-        <div className="space-y-3">
-          <div className="flex items-center space-x-3 bg-yellow-500/20 p-3 rounded-lg">
-            <span className="text-xl sm:text-2xl">🏆</span>
-            <div>
-              <p className="text-sm sm:text-base font-medium">Eco Warrior</p>
-              <p className="text-xs sm:text-sm text-yellow-200">Sorted 25 items correctly</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-3 bg-green-500/20 p-3 rounded-lg">
-            <span className="text-xl sm:text-2xl">🌱</span>
-            <div>
-              <p className="text-sm sm:text-base font-medium">Bio Expert</p>
-              <p className="text-xs sm:text-sm text-green-200">Perfect bio waste sorting</p>
-            </div>
-          </div>
+      {/* Level selection */}
+      <div className="flex flex-col items-center space-y-6 sm:space-y-8">
+        <h2 className="text-xl sm:text-2xl font-semibold text-center dark:text-cyan-300">{t.selectLevel}</h2>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
+          {[1, 2, 3, 4, 5].map((level) => (
+            <Button
+              key={level}
+              onClick={() => onStartLevel(level)}
+              className="w-16 h-16 sm:w-20 sm:h-20 text-lg sm:text-xl font-bold rounded-2xl bg-white/20 hover:bg-white/30 text-white border-2 border-white/30 hover:border-white/50 transition-all duration-200 hover:scale-110 dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border dark:hover:neon-glow"
+            >
+              {level}
+            </Button>
+          ))}
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="space-y-4 mt-auto">
+        
         <Button
-          onClick={onPlayGame}
-          className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl shadow-lg transition-all duration-200 hover:scale-105"
+          onClick={onOpenProfile}
+          className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 dark:from-purple-600 dark:to-pink-600 dark:hover:from-purple-700 dark:hover:to-pink-700 dark:neon-glow"
         >
-          <Play className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-          {t.playGame}
+          <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+          {t.profile}
         </Button>
+      </div>
 
-        <Button
-          onClick={onViewProfile}
-          className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold bg-white/20 hover:bg-white/30 text-white rounded-xl border border-white/30 transition-all duration-200 hover:scale-105"
-        >
-          <User className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
-          {t.viewProfile}
-        </Button>
+      {/* Instructions */}
+      <div className="mt-8 sm:mt-12 text-center max-w-md sm:max-w-2xl">
+        <p className="text-sm sm:text-base text-blue-100 dark:text-cyan-200 leading-relaxed">
+          {t.instructions}
+        </p>
       </div>
     </div>
   );
