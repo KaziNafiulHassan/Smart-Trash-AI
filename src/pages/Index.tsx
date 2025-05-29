@@ -77,7 +77,7 @@ const Index = () => {
     setCurrentScreen('gameHome');
   };
 
-  const handlePlayGame = () => {
+  const handleStartLevel = (level: number) => {
     setCurrentScreen('gameLevel');
   };
 
@@ -132,8 +132,8 @@ const Index = () => {
             language={language}
             user={user}
             gameProgress={gameProgress}
-            onPlayGame={handlePlayGame}
-            onViewProfile={handleViewProfile}
+            onStartLevel={handleStartLevel}
+            onOpenProfile={handleViewProfile}
           />
         );
       case 'gameLevel':

@@ -7,6 +7,16 @@ import ThemeToggle from '@/components/ui/ThemeToggle';
 
 interface GameHomeProps {
   language: Language;
+  user: any; // Add user prop
+  gameProgress: { // Add gameProgress prop
+    level: number;
+    total_correct: number;
+    total_attempts: number;
+    completed_levels: number;
+    best_score: number;
+    current_streak: number;
+    best_streak: number;
+  };
   onStartLevel: (level: number) => void;
   onOpenProfile: () => void;
 }
@@ -28,7 +38,7 @@ const texts = {
   }
 };
 
-const GameHome: React.FC<GameHomeProps> = ({ language, onStartLevel, onOpenProfile }) => {
+const GameHome: React.FC<GameHomeProps> = ({ language, user, gameProgress, onStartLevel, onOpenProfile }) => {
   const t = texts[language];
 
   return (
