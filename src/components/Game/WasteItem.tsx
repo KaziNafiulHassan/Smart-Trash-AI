@@ -15,7 +15,6 @@ interface WasteItemProps {
 
 const WasteItem: React.FC<WasteItemProps> = ({ item, onDragStart, isDraggable, isCompleted }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
 
   const handleDragStart = (e: React.DragEvent) => {
     if (!isDraggable || isCompleted) return;
@@ -26,70 +25,6 @@ const WasteItem: React.FC<WasteItemProps> = ({ item, onDragStart, isDraggable, i
 
   const handleDragEnd = () => {
     setIsDragging(false);
-  };
-
-  // Touch event handlers for mobile support
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isDraggable || isCompleted) return;
-    
-    const touch = e.touches[0];
-    setTouchStart({ x: touch.clientX, y: touch.clientY });
-    onDragStart(item.id);
-    setIsDragging(true);
-    
-    // Prevent default behavior
-    e.preventDefault();
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStart || !isDragging) return;
-    
-    const touch = e.touches[0];
-    const element = e.currentTarget as HTMLElement;
-    
-    // Update position
-    element.style.position = 'fixed';
-    element.style.left = `${touch.clientX - 50}px`;
-    element.style.top = `${touch.clientY - 50}px`;
-    element.style.zIndex = '1000';
-    element.style.pointerEvents = 'none';
-    
-    // Prevent scrolling
-    e.preventDefault();
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!touchStart || !isDragging) return;
-    
-    const touch = e.changedTouches[0];
-    const element = e.currentTarget as HTMLElement;
-    
-    // Reset element styles
-    element.style.position = '';
-    element.style.left = '';
-    element.style.top = '';
-    element.style.zIndex = '';
-    element.style.pointerEvents = '';
-    
-    // Find the element under the touch point
-    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
-    const binElement = elementBelow?.closest('[data-bin-id]');
-    
-    if (binElement) {
-      const binId = binElement.getAttribute('data-bin-id');
-      if (binId) {
-        // Trigger drop event
-        const dropEvent = new CustomEvent('touchDrop', { 
-          detail: { binId, itemId: item.id } 
-        });
-        document.dispatchEvent(dropEvent);
-      }
-    }
-    
-    setTouchStart(null);
-    setIsDragging(false);
-    
-    e.preventDefault();
   };
 
   return (
@@ -106,9 +41,6 @@ const WasteItem: React.FC<WasteItemProps> = ({ item, onDragStart, isDraggable, i
       draggable={isDraggable && !isCompleted}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <div className="text-center">
         {item.emoji && (
