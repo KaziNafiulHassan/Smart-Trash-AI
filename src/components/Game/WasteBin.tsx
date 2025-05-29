@@ -16,12 +16,27 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget }) => {
   const [imageUrl, setImageUrl] = useState<string>('');
 
   useEffect(() => {
+    // Listen for custom touch drop events
+    const handleTouchDrop = (e: CustomEvent) => {
+      if (e.detail.binId === bin.id) {
+        onDrop(bin.id);
+      }
+    };
+
+    document.addEventListener('touchDrop', handleTouchDrop as EventListener);
+    
+    return () => {
+      document.removeEventListener('touchDrop', handleTouchDrop as EventListener);
+    };
+  }, [bin.id, onDrop]);
+
+  useEffect(() => {
     // Load bin image from Supabase storage
     const loadBinImage = async () => {
       const { supabase } = await import('@/integrations/supabase/client');
       const { data } = supabase.storage
         .from('waste-images')
-        .getPublicUrl(`${bin.id}.jpg`);
+        .getPublicUrl(`bins/${bin.id}.jpg`);
       
       setImageUrl(data.publicUrl);
     };
@@ -48,6 +63,7 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget }) => {
 
   return (
     <div
+      data-bin-id={bin.id}
       className={`relative flex flex-col items-center justify-center w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${bin.color} transition-all duration-200 border-2 ${
         isHovered 
           ? 'border-yellow-400 dark:border-yellow-300 scale-110 shadow-lg shadow-yellow-400/50' 
