@@ -1,58 +1,133 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 
 interface WasteItemProps {
   item: {
     id: string;
     item_name: string;
+    emoji?: string;
     image_url?: string;
-    description?: string;
   };
-  onDragStart?: (itemId: string) => void;
-  isDraggable?: boolean;
-  isCompleted?: boolean;
+  onDragStart: (itemId: string) => void;
+  isDraggable: boolean;
+  isCompleted: boolean;
 }
 
-const WasteItem: React.FC<WasteItemProps> = ({ 
-  item, 
-  onDragStart, 
-  isDraggable = false,
-  isCompleted = false 
-}) => {
+const WasteItem: React.FC<WasteItemProps> = ({ item, onDragStart, isDraggable, isCompleted }) => {
+  const [isDragging, setIsDragging] = useState(false);
+  const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+
   const handleDragStart = (e: React.DragEvent) => {
-    if (isDraggable && onDragStart) {
-      onDragStart(item.id);
+    if (!isDraggable || isCompleted) return;
+    setIsDragging(true);
+    onDragStart(item.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
+  // Touch event handlers for mobile support
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!isDraggable || isCompleted) return;
+    
+    const touch = e.touches[0];
+    setTouchStart({ x: touch.clientX, y: touch.clientY });
+    onDragStart(item.id);
+    setIsDragging(true);
+    
+    // Prevent default behavior
+    e.preventDefault();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!touchStart || !isDragging) return;
+    
+    const touch = e.touches[0];
+    const element = e.currentTarget as HTMLElement;
+    
+    // Update position
+    element.style.position = 'fixed';
+    element.style.left = `${touch.clientX - 50}px`;
+    element.style.top = `${touch.clientY - 50}px`;
+    element.style.zIndex = '1000';
+    element.style.pointerEvents = 'none';
+    
+    // Prevent scrolling
+    e.preventDefault();
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!touchStart || !isDragging) return;
+    
+    const touch = e.changedTouches[0];
+    const element = e.currentTarget as HTMLElement;
+    
+    // Reset element styles
+    element.style.position = '';
+    element.style.left = '';
+    element.style.top = '';
+    element.style.zIndex = '';
+    element.style.pointerEvents = '';
+    
+    // Find the element under the touch point
+    const elementBelow = document.elementFromPoint(touch.clientX, touch.clientY);
+    const binElement = elementBelow?.closest('[data-bin-id]');
+    
+    if (binElement) {
+      const binId = binElement.getAttribute('data-bin-id');
+      if (binId) {
+        // Trigger drop event
+        const dropEvent = new CustomEvent('touchDrop', { 
+          detail: { binId, itemId: item.id } 
+        });
+        document.dispatchEvent(dropEvent);
+      }
     }
+    
+    setTouchStart(null);
+    setIsDragging(false);
+    
+    e.preventDefault();
   };
 
   return (
     <div
-      className={`bg-white dark:bg-gray-800 dark:neon-border rounded-3xl p-8 sm:p-10 shadow-xl dark:shadow-purple-500/20 flex flex-col items-center justify-center min-h-[250px] sm:min-h-[300px] w-60 sm:w-72 ${
-        isDraggable ? 'cursor-move hover:scale-105 dark:hover:neon-glow' : 'cursor-default'
-      } ${isCompleted ? 'opacity-50 bg-green-100 dark:bg-green-900/30' : ''} transition-all duration-200`}
-      draggable={isDraggable}
+      className={`relative bg-white/90 dark:bg-gray-800/90 rounded-2xl p-4 sm:p-6 shadow-lg border-2 transition-all duration-200 ${
+        isDraggable && !isCompleted
+          ? 'cursor-grab hover:scale-105 border-blue-300 dark:border-cyan-400'
+          : 'cursor-default border-gray-300 dark:border-gray-600'
+      } ${
+        isDragging ? 'scale-110 shadow-2xl rotate-3 opacity-80' : ''
+      } ${
+        isCompleted ? 'opacity-50 grayscale' : ''
+      }`}
+      draggable={isDraggable && !isCompleted}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     >
-      <div className="w-32 h-32 sm:w-40 sm:h-40 mb-6 flex items-center justify-center">
-        {item.image_url ? (
+      <div className="text-center">
+        {item.emoji && (
+          <div className="text-4xl sm:text-6xl mb-2">{item.emoji}</div>
+        )}
+        {item.image_url && (
           <img 
             src={item.image_url} 
             alt={item.item_name}
-            className="w-full h-full object-contain rounded-xl"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-              target.nextElementSibling?.classList.remove('hidden');
-            }}
+            className="w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-2 object-contain"
           />
-        ) : null}
-        <div className="text-6xl sm:text-7xl hidden">📦</div>
+        )}
+        <p className="font-semibold text-gray-800 dark:text-gray-200 text-sm sm:text-base">
+          {item.item_name}
+        </p>
       </div>
-      <p className="text-gray-800 dark:text-gray-200 dark:neon-text font-semibold text-base sm:text-lg text-center leading-tight">
-        {item.item_name}
-      </p>
-      {isCompleted && (
-        <div className="text-green-500 dark:text-green-400 text-3xl mt-3">✓</div>
+      
+      {isDraggable && !isCompleted && (
+        <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-blue-400/50 dark:border-cyan-400/50 opacity-0 hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
       )}
     </div>
   );

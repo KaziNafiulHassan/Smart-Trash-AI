@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Star, RotateCcw, Clock } from 'lucide-react';
+import { ArrowLeft, Star, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/pages/Index';
 import WasteBin from './WasteBin';
@@ -7,6 +8,8 @@ import WasteItem from './WasteItem';
 import FeedbackPopup from './FeedbackPopup';
 import LogoutButton from './LogoutButton';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import LanguageToggle from '@/components/ui/LanguageToggle';
+import AnimatedTimerBar from './AnimatedTimerBar';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
@@ -56,6 +59,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [gameData, setGameData] = useState<any>({ wasteItems: [], binCategories: {} });
   const [timer, setTimer] = useState(30);
+  const [maxTime, setMaxTime] = useState(30);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [sortingTimes, setSortingTimes] = useState<number[]>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -100,6 +104,14 @@ const GameLevel: React.FC<GameLevelProps> = ({
     }
   ];
 
+  // Calculate level-based timer - decreases as level increases
+  const calculateLevelTimer = (level: number) => {
+    const baseTime = 30;
+    const reductionPerLevel = 1.5;
+    const minTime = 10;
+    return Math.max(minTime, baseTime - (level - 1) * reductionPerLevel);
+  };
+
   useEffect(() => {
     loadGameData();
   }, [language]);
@@ -113,10 +125,12 @@ const GameLevel: React.FC<GameLevelProps> = ({
   useEffect(() => {
     if (currentItem && !startTime) {
       setStartTime(Date.now());
-      setTimer(30);
+      const levelTimer = calculateLevelTimer(level);
+      setMaxTime(levelTimer);
+      setTimer(levelTimer);
       setIsTimerActive(true);
     }
-  }, [currentItem]);
+  }, [currentItem, level]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -177,7 +191,9 @@ const GameLevel: React.FC<GameLevelProps> = ({
       setCurrentItemIndex(nextIndex);
       setCurrentItem(allItems[nextIndex]);
       setStartTime(Date.now());
-      setTimer(30);
+      const levelTimer = calculateLevelTimer(level);
+      setMaxTime(levelTimer);
+      setTimer(levelTimer);
       setIsTimerActive(true);
     } else {
       // Level complete
@@ -195,7 +211,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
     console.log('Item description:', currentItem.description);
 
     setIsTimerActive(false);
-    const sortTime = startTime ? Date.now() - startTime : 30000;
+    const sortTime = startTime ? Date.now() - startTime : maxTime * 1000;
     setSortingTimes(prev => [...prev, sortTime]);
 
     const bin = bins.find(b => b.id === binId);
@@ -281,18 +297,14 @@ const GameLevel: React.FC<GameLevelProps> = ({
     setStartTime(null);
   };
 
-  const timerColor = timer <= 10 ? 'text-red-400 dark:text-red-300' : timer <= 20 ? 'text-yellow-400 dark:text-yellow-300' : 'text-green-400 dark:text-green-300';
-
   return (
-    <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-purple-900">
+    <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white dark:text-white bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 dark:from-gray-900 dark:via-purple-900 dark:to-blue-900">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <Button
-          onClick={onBackToHome}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
-        >
-          <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-        </Button>
+        <div className="flex items-center space-x-2">
+          <LanguageToggle language={language} onLanguageChange={() => {}} />
+          <ThemeToggle />
+        </div>
         
         <div className="text-center">
           <h1 className="text-xl sm:text-2xl font-bold dark:neon-text">{t.level} {level}</h1>
@@ -301,30 +313,36 @@ const GameLevel: React.FC<GameLevelProps> = ({
               <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 dark:text-yellow-300" />
               <span className="text-sm sm:text-lg font-semibold dark:text-cyan-300">{score}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className={`text-sm sm:text-lg font-semibold ${timerColor}`}>{timer}s</span>
-            </div>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
-          <ThemeToggle />
           <Button
             onClick={resetLevel}
             className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
           >
             <RotateCcw className="w-4 h-4 sm:w-6 sm:h-6" />
           </Button>
+          <Button
+            onClick={onBackToHome}
+            className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
+          >
+            <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+          </Button>
           <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
         </div>
+      </div>
+
+      {/* Animated Timer Bar */}
+      <div className="mb-6">
+        <AnimatedTimerBar timeLeft={timer} maxTime={maxTime} language={language} />
       </div>
 
       {/* Instructions */}
       <div className="text-center mb-6 sm:mb-8">
         <p className="text-sm sm:text-base text-blue-100 dark:text-cyan-200">{t.dragInstruction}</p>
         <p className="text-xs sm:text-sm text-blue-200 dark:text-cyan-300 mt-1">
-          Item {currentItemIndex + 1} of {allItems.length}
+          Item {currentItemIndex + 1} of {allItems.length} • Level {level} Timer: {Math.round(maxTime)}s
         </p>
       </div>
 
