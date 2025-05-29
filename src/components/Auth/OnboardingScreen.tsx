@@ -12,7 +12,7 @@ interface OnboardingScreenProps {
 
 const texts = {
   EN: {
-    welcome: 'Welcome to EcoSort!',
+    welcome: 'Welcome to Smart Trash AI!',
     subtitle: 'Learn to sort waste correctly and help protect our environment',
     instruction: 'Drag items to the correct bins',
     example: 'Example: Paper goes in the blue bin',
@@ -20,7 +20,7 @@ const texts = {
     skipTutorial: 'Skip Tutorial'
   },
   DE: {
-    welcome: 'Willkommen bei EcoSort!',
+    welcome: 'Willkommen bei Smart Trash AI!',
     subtitle: 'Lerne Müll richtig zu trennen und hilf dabei, unsere Umwelt zu schützen',
     instruction: 'Ziehe Gegenstände in die richtigen Tonnen',
     example: 'Beispiel: Papier gehört in die blaue Tonne',
@@ -38,7 +38,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ language, onComplet
     {
       id: 'paper-sample',
       item_name: language === 'EN' ? 'Newspaper' : 'Zeitung',
-      description: language === 'EN' ? 'Old newspaper for recycling' : 'Alte Zeitung zum Recycling'
+      emoji: '📰'
     }
   ];
 
@@ -55,12 +55,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ language, onComplet
     }
   ];
 
+  // Dummy handlers for demo purposes
+  const handleDrop = (binId: string) => {
+    console.log('Dropped in bin:', binId);
+  };
+
+  const handleDragStart = (itemId: string) => {
+    console.log('Started dragging:', itemId);
+  };
+
   const steps = [
     {
       title: t.welcome,
       content: (
         <div className="text-center">
-          <div className="text-6xl mb-4">🌱</div>
+          <div className="text-6xl mb-4">🤖</div>
           <p className="text-blue-100 text-lg mb-6">{t.subtitle}</p>
         </div>
       )
@@ -72,14 +81,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ language, onComplet
           <p className="text-blue-100 text-center">{t.example}</p>
           <div className="grid grid-cols-2 gap-4 mb-6">
             {sampleBins.map((bin) => (
-              <WasteBin key={bin.id} bin={bin} />
+              <WasteBin 
+                key={bin.id} 
+                bin={bin} 
+                onDrop={handleDrop}
+                isDropTarget={true}
+              />
             ))}
           </div>
           <div className="flex justify-center">
             <div className="w-32">
               <WasteItem
                 item={sampleItems[0]}
-                isDraggable={false}
+                onDragStart={handleDragStart}
+                isDraggable={true}
+                isCompleted={false}
               />
             </div>
           </div>
