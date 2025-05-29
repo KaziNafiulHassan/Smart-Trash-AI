@@ -1,17 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthScreen from '@/components/Auth/AuthScreen';
 import OnboardingScreen from '@/components/Auth/OnboardingScreen';
 import GameHome from '@/components/Game/GameHome';
-import LevelSelection from '@/components/Game/LevelSelection';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
 
 export type Language = 'EN' | 'DE';
-export type Screen = 'auth' | 'onboarding' | 'gameHome' | 'levelSelection' | 'gameLevel' | 'profile' | 'realtimeSorting';
+export type Screen = 'auth' | 'onboarding' | 'gameHome' | 'gameLevel' | 'profile' | 'realtimeSorting';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -80,7 +78,7 @@ const Index = () => {
   };
 
   const handleStartEcoSort = () => {
-    setCurrentScreen('levelSelection');
+    setCurrentScreen('gameLevel'); // Go directly to game level
   };
 
   const handleStartRealtimeSorting = () => {
@@ -134,7 +132,7 @@ const Index = () => {
 
   const renderScreen = () => {
     if (!user) {
-      return <AuthScreen language={language} onAuth={handleAuth} />;
+      return <AuthScreen language={language} onAuth={handleAuth} onLanguageChange={handleLanguageChange} />;
     }
 
     switch (currentScreen) {
@@ -153,16 +151,6 @@ const Index = () => {
             onStartRealtimeSorting={handleStartRealtimeSorting}
           />
         );
-      case 'levelSelection':
-        return (
-          <LevelSelection
-            language={language}
-            gameProgress={gameProgress}
-            onStartLevel={handleStartLevel}
-            onBackToHome={handleBackToHome}
-            onLanguageChange={handleLanguageChange}
-          />
-        );
       case 'gameLevel':
         return (
           <GameLevel
@@ -179,6 +167,7 @@ const Index = () => {
             user={user}
             gameProgress={gameProgress}
             onBackToHome={handleBackToHome}
+            onLanguageChange={handleLanguageChange}
           />
         );
       case 'realtimeSorting':
@@ -197,7 +186,7 @@ const Index = () => {
           </div>
         );
       default:
-        return <AuthScreen language={language} onAuth={handleAuth} />;
+        return <AuthScreen language={language} onAuth={handleAuth} onLanguageChange={handleLanguageChange} />;
     }
   };
 

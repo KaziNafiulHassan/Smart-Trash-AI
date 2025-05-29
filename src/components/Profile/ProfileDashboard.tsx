@@ -1,15 +1,17 @@
-
 import React from 'react';
 import { ArrowLeft, Trophy, Target, Calendar, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/pages/Index';
 import LogoutButton from '../Game/LogoutButton';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import LanguageToggle from '@/components/ui/LanguageToggle';
 
 interface ProfileDashboardProps {
   language: Language;
   user: any;
   gameProgress: any;
   onBackToHome: () => void;
+  onLanguageChange: (language: Language) => void;
 }
 
 const texts = {
@@ -61,7 +63,8 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
   language,
   user,
   gameProgress,
-  onBackToHome
+  onBackToHome,
+  onLanguageChange
 }) => {
   const t = texts[language];
   const accuracy = gameProgress.total_attempts > 0 
@@ -93,7 +96,11 @@ const ProfileDashboard: React.FC<ProfileDashboardProps> = ({
           <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
         </Button>
         <h1 className="text-xl sm:text-2xl font-bold">{t.profile}</h1>
-        <LogoutButton className="bg-white/20 hover:bg-white/30 text-white" />
+        <div className="flex items-center space-x-2">
+          <LanguageToggle language={language} onLanguageChange={onLanguageChange} />
+          <ThemeToggle />
+          <LogoutButton className="bg-white/20 hover:bg-white/30 text-white" />
+        </div>
       </div>
 
       {/* User Info */}

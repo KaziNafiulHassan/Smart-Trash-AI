@@ -1,19 +1,21 @@
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { profileService } from '@/services/profileService';
 import { Language } from '@/pages/Index';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import LanguageToggle from '@/components/ui/LanguageToggle';
 
 interface AuthScreenProps {
   language: Language;
   onAuth: (user: any) => void;
+  onLanguageChange: (language: Language) => void;
 }
 
 const texts = {
   EN: {
-    welcome: 'Welcome to EcoSort',
+    welcome: 'Welcome to Smart Trash AI',
     subtitle: 'Learn waste sorting through fun gameplay',
     signIn: 'Sign In',
     signUp: 'Sign Up',
@@ -30,7 +32,7 @@ const texts = {
     namePlaceholder: 'Enter your full name'
   },
   DE: {
-    welcome: 'Willkommen bei EcoSort',
+    welcome: 'Willkommen bei Smart Trash AI',
     subtitle: 'Lerne Mülltrennung durch spielerisches Lernen',
     signIn: 'Anmelden',
     signUp: 'Registrieren',
@@ -48,7 +50,7 @@ const texts = {
   }
 };
 
-const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth }) => {
+const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth, onLanguageChange }) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -118,9 +120,15 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth }) => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center p-6 text-white">
+      {/* Header with controls */}
+      <div className="absolute top-4 right-4 flex items-center space-x-2">
+        <LanguageToggle language={language} onLanguageChange={onLanguageChange} />
+        <ThemeToggle />
+      </div>
+
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="text-6xl mb-4">♻️</div>
+          <div className="text-6xl mb-4">🤖</div>
           <h1 className="text-3xl font-bold mb-2">{t.welcome}</h1>
           <p className="text-blue-100">{t.subtitle}</p>
         </div>
