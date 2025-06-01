@@ -1,7 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, RotateCcw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Language } from '@/pages/Index';
 import WasteBin from './WasteBin';
 import WasteItem from './WasteItem';
@@ -57,6 +57,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [gameData, setGameData] = useState<any>({ wasteItems: [], binCategories: {} });
   const [timer, setTimer] = useState(30);
+  const [initialTimer, setInitialTimer] = useState(30);
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [sortingTimes, setSortingTimes] = useState<number[]>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
@@ -127,6 +128,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
       setStartTime(Date.now());
       const levelTimer = getTimerForLevel(level);
       setTimer(levelTimer);
+      setInitialTimer(levelTimer);
       setIsTimerActive(true);
     }
   }, [currentItem, level]);
@@ -192,6 +194,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
       setStartTime(Date.now());
       const levelTimer = getTimerForLevel(level);
       setTimer(levelTimer);
+      setInitialTimer(levelTimer);
       setIsTimerActive(true);
     } else {
       // Level complete
@@ -295,7 +298,15 @@ const GameLevel: React.FC<GameLevelProps> = ({
     setStartTime(null);
   };
 
-  const timerColor = timer <= 10 ? 'text-red-400 dark:text-red-300' : timer <= 20 ? 'text-yellow-400 dark:text-yellow-300' : 'text-green-400 dark:text-green-300';
+  // Calculate progress percentage for the timer bar
+  const timerProgress = initialTimer > 0 ? (timer / initialTimer) * 100 : 0;
+  
+  // Determine timer bar color based on remaining time
+  const getTimerBarColor = () => {
+    if (timerProgress > 60) return 'bg-green-500';
+    if (timerProgress > 30) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
 
   return (
     <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-purple-900">
@@ -315,10 +326,6 @@ const GameLevel: React.FC<GameLevelProps> = ({
               <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 dark:text-yellow-300" />
               <span className="text-sm sm:text-lg font-semibold dark:text-cyan-300">{score}</span>
             </div>
-            <div className="flex items-center space-x-1">
-              <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className={`text-sm sm:text-lg font-semibold ${timerColor}`}>{timer}s</span>
-            </div>
           </div>
         </div>
 
@@ -331,6 +338,26 @@ const GameLevel: React.FC<GameLevelProps> = ({
             <RotateCcw className="w-4 h-4 sm:w-6 sm:h-6" />
           </Button>
           <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
+        </div>
+      </div>
+
+      {/* Timer Bar */}
+      <div className="mb-6">
+        <div className="flex items-center justify-center space-x-2 mb-2">
+          <Clock className="w-4 h-4 text-white" />
+          <span className="text-sm font-medium text-white">{timer}s</span>
+        </div>
+        <div className="w-full max-w-md mx-auto">
+          <Progress 
+            value={timerProgress} 
+            className="h-3 bg-white/20"
+          />
+          <style jsx>{`
+            .progress-indicator {
+              background-color: ${timerProgress > 60 ? '#10b981' : timerProgress > 30 ? '#f59e0b' : '#ef4444'};
+              transition: all 0.3s ease;
+            }
+          `}</style>
         </div>
       </div>
 
