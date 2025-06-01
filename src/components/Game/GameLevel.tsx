@@ -8,6 +8,7 @@ import WasteItem from './WasteItem';
 import FeedbackPopup from './FeedbackPopup';
 import LogoutButton from './LogoutButton';
 import ThemeToggle from '@/components/ui/ThemeToggle';
+import LevelUpAnimation from './LevelUpAnimation';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
@@ -61,6 +62,8 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [sortingTimes, setSortingTimes] = useState<number[]>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
+  const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false);
+  const [userAchievements, setUserAchievements] = useState<any[]>([]);
 
   const t = texts[language];
 
@@ -197,12 +200,29 @@ const GameLevel: React.FC<GameLevelProps> = ({
       setInitialTimer(levelTimer);
       setIsTimerActive(true);
     } else {
-      // Level complete
-      setTimeout(() => {
-        onLevelComplete(true);
-        generateLevelItems();
-      }, 1000);
+      // Level complete - show level up animation
+      setShowLevelUpAnimation(true);
+      loadUserAchievements();
     }
+  };
+
+  const loadUserAchievements = async () => {
+    if (!user) return;
+    
+    try {
+      const achievements = await gameService.getUserAchievements(user.id);
+      setUserAchievements(achievements);
+    } catch (error) {
+      console.error('Error loading achievements:', error);
+    }
+  };
+
+  const handleLevelUpAnimationComplete = () => {
+    setShowLevelUpAnimation(false);
+    setTimeout(() => {
+      onLevelComplete(true);
+      generateLevelItems();
+    }, 500);
   };
 
   const handleDrop = async (binId: string) => {
@@ -298,10 +318,8 @@ const GameLevel: React.FC<GameLevelProps> = ({
     setStartTime(null);
   };
 
-  // Calculate progress percentage for the timer bar
   const timerProgress = initialTimer > 0 ? (timer / initialTimer) * 100 : 0;
   
-  // Determine timer bar color based on remaining time
   const getTimerBarColor = () => {
     if (timerProgress > 60) return 'bg-green-500';
     if (timerProgress > 30) return 'bg-yellow-500';
@@ -352,12 +370,6 @@ const GameLevel: React.FC<GameLevelProps> = ({
             value={timerProgress} 
             className="h-3 bg-white/20"
           />
-          <style jsx>{`
-            .progress-indicator {
-              background-color: ${timerProgress > 60 ? '#10b981' : timerProgress > 30 ? '#f59e0b' : '#ef4444'};
-              transition: all 0.3s ease;
-            }
-          `}</style>
         </div>
       </div>
 
@@ -429,6 +441,17 @@ const GameLevel: React.FC<GameLevelProps> = ({
           feedback={feedbackData}
           language={language}
           onClose={handleFeedbackClose}
+        />
+      )}
+
+      {/* Level Up Animation */}
+      {showLevelUpAnimation && (
+        <LevelUpAnimation
+          language={language}
+          level={level}
+          score={score}
+          achievements={userAchievements}
+          onComplete={handleLevelUpAnimationComplete}
         />
       )}
     </div>
