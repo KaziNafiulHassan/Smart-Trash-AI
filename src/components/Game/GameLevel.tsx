@@ -1,14 +1,14 @@
+
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Star, RotateCcw, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { Language } from '@/pages/Index';
-import WasteBin from './WasteBin';
 import WasteItem from './WasteItem';
 import FeedbackPopup from './FeedbackPopup';
-import LogoutButton from './LogoutButton';
-import ThemeToggle from '@/components/ui/ThemeToggle';
 import LevelUpAnimation from './LevelUpAnimation';
+import GameHeader from './GameHeader';
+import GameTimer from './GameTimer';
+import GameInstructions from './GameInstructions';
+import GameProgress from './GameProgress';
+import GameBinsGrid from './GameBinsGrid';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,27 +19,6 @@ interface GameLevelProps {
   onLevelComplete: (correct: boolean) => void;
   onBackToHome: () => void;
 }
-
-const texts = {
-  EN: {
-    level: 'Level',
-    score: 'Score',
-    dragInstruction: 'Drag the item to the correct bin',
-    nextLevel: 'Next Level',
-    tryAgain: 'Try Again',
-    backToHome: 'Back to Home',
-    timer: 'Timer'
-  },
-  DE: {
-    level: 'Level',
-    score: 'Punkte',
-    dragInstruction: 'Ziehe den Gegenstand in die richtige Tonne',
-    nextLevel: 'Nächstes Level',
-    tryAgain: 'Nochmal Versuchen',
-    backToHome: 'Zurück zum Hauptmenü',
-    timer: 'Timer'
-  }
-};
 
 const GameLevel: React.FC<GameLevelProps> = ({
   language,
@@ -64,19 +43,6 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
-
-  const t = texts[language];
-
-  // Calculate timer based on level - progressively decrease timer
-  const getTimerForLevel = (currentLevel: number) => {
-    // Start with 30 seconds for level 1, decrease by 2 seconds per level, minimum 10 seconds
-    const baseTime = 30;
-    const decreasePerLevel = 2;
-    const minTime = 10;
-    
-    const calculatedTime = baseTime - ((currentLevel - 1) * decreasePerLevel);
-    return Math.max(calculatedTime, minTime);
-  };
 
   const bins = [
     { 
@@ -115,6 +81,17 @@ const GameLevel: React.FC<GameLevelProps> = ({
       color: 'bg-purple-600 dark:bg-purple-800 dark:neon-glow'
     }
   ];
+
+  // Calculate timer based on level - progressively decrease timer
+  const getTimerForLevel = (currentLevel: number) => {
+    // Start with 30 seconds for level 1, decrease by 2 seconds per level, minimum 10 seconds
+    const baseTime = 30;
+    const decreasePerLevel = 2;
+    const minTime = 10;
+    
+    const calculatedTime = baseTime - ((currentLevel - 1) * decreasePerLevel);
+    return Math.max(calculatedTime, minTime);
+  };
 
   useEffect(() => {
     loadGameData();
@@ -318,68 +295,30 @@ const GameLevel: React.FC<GameLevelProps> = ({
     setStartTime(null);
   };
 
-  const timerProgress = initialTimer > 0 ? (timer / initialTimer) * 100 : 0;
-  
-  const getTimerBarColor = () => {
-    if (timerProgress > 60) return 'bg-green-500';
-    if (timerProgress > 30) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
   return (
     <div className="min-h-screen flex flex-col p-4 sm:p-6 text-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-purple-900">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <Button
-          onClick={onBackToHome}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
-        >
-          <ArrowLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-        </Button>
-        
-        <div className="text-center">
-          <h1 className="text-xl sm:text-2xl font-bold dark:neon-text">{t.level} {level}</h1>
-          <div className="flex items-center justify-center space-x-4 mt-1">
-            <div className="flex items-center space-x-1">
-              <Star className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400 dark:text-yellow-300" />
-              <span className="text-sm sm:text-lg font-semibold dark:text-cyan-300">{score}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <ThemeToggle />
-          <Button
-            onClick={resetLevel}
-            className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
-          >
-            <RotateCcw className="w-4 h-4 sm:w-6 sm:h-6" />
-          </Button>
-          <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
-        </div>
-      </div>
+      <GameHeader
+        language={language}
+        level={level}
+        score={score}
+        onBackToHome={onBackToHome}
+        onResetLevel={resetLevel}
+      />
 
       {/* Timer Bar */}
-      <div className="mb-6">
-        <div className="flex items-center justify-center space-x-2 mb-2">
-          <Clock className="w-4 h-4 text-white" />
-          <span className="text-sm font-medium text-white">{timer}s</span>
-        </div>
-        <div className="w-full max-w-md mx-auto">
-          <Progress 
-            value={timerProgress} 
-            className="h-3 bg-white/20"
-          />
-        </div>
-      </div>
+      <GameTimer
+        language={language}
+        timer={timer}
+        initialTimer={initialTimer}
+      />
 
       {/* Instructions */}
-      <div className="text-center mb-6 sm:mb-8">
-        <p className="text-sm sm:text-base text-blue-100 dark:text-cyan-200">{t.dragInstruction}</p>
-        <p className="text-xs sm:text-sm text-blue-200 dark:text-cyan-300 mt-1">
-          Item {currentItemIndex + 1} of {allItems.length}
-        </p>
-      </div>
+      <GameInstructions
+        language={language}
+        currentItemIndex={currentItemIndex}
+        totalItems={allItems.length}
+      />
 
       {/* Current Item */}
       {currentItem && (
@@ -395,45 +334,16 @@ const GameLevel: React.FC<GameLevelProps> = ({
       )}
 
       {/* Bins */}
-      <div className="flex-1 flex flex-col justify-center">
-        <div className="space-y-3 sm:space-y-4">
-          {/* First row - 4 bins */}
-          <div className="flex justify-center gap-2 sm:gap-3">
-            {bins.slice(0, 4).map((bin) => (
-              <WasteBin
-                key={bin.id}
-                bin={bin}
-                onDrop={handleDrop}
-                isDropTarget={true}
-              />
-            ))}
-          </div>
-          {/* Second row - 3 bins */}
-          <div className="flex justify-center gap-2 sm:gap-3">
-            {bins.slice(4, 7).map((bin) => (
-              <WasteBin
-                key={bin.id}
-                bin={bin}
-                onDrop={handleDrop}
-                isDropTarget={true}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      <GameBinsGrid
+        language={language}
+        onDrop={handleDrop}
+      />
 
       {/* Progress */}
-      <div className="flex justify-center space-x-2 mb-4">
-        {allItems.map((_, index) => (
-          <div
-            key={index}
-            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full ${
-              index < currentItemIndex ? 'bg-green-400' : 
-              index === currentItemIndex ? 'bg-blue-400' : 'bg-white/30'
-            }`}
-          />
-        ))}
-      </div>
+      <GameProgress
+        allItems={allItems}
+        currentItemIndex={currentItemIndex}
+      />
 
       {/* Feedback Popup */}
       {showFeedback && feedbackData && (
