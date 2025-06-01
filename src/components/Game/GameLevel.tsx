@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Star, RotateCcw, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,6 +63,17 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
   const t = texts[language];
 
+  // Calculate timer based on level - progressively decrease timer
+  const getTimerForLevel = (currentLevel: number) => {
+    // Start with 30 seconds for level 1, decrease by 2 seconds per level, minimum 10 seconds
+    const baseTime = 30;
+    const decreasePerLevel = 2;
+    const minTime = 10;
+    
+    const calculatedTime = baseTime - ((currentLevel - 1) * decreasePerLevel);
+    return Math.max(calculatedTime, minTime);
+  };
+
   const bins = [
     { 
       id: 'residual', 
@@ -113,10 +125,11 @@ const GameLevel: React.FC<GameLevelProps> = ({
   useEffect(() => {
     if (currentItem && !startTime) {
       setStartTime(Date.now());
-      setTimer(30);
+      const levelTimer = getTimerForLevel(level);
+      setTimer(levelTimer);
       setIsTimerActive(true);
     }
-  }, [currentItem]);
+  }, [currentItem, level]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -177,7 +190,8 @@ const GameLevel: React.FC<GameLevelProps> = ({
       setCurrentItemIndex(nextIndex);
       setCurrentItem(allItems[nextIndex]);
       setStartTime(Date.now());
-      setTimer(30);
+      const levelTimer = getTimerForLevel(level);
+      setTimer(levelTimer);
       setIsTimerActive(true);
     } else {
       // Level complete
@@ -195,7 +209,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
     console.log('Item description:', currentItem.description);
 
     setIsTimerActive(false);
-    const sortTime = startTime ? Date.now() - startTime : 30000;
+    const sortTime = startTime ? Date.now() - startTime : getTimerForLevel(level) * 1000;
     setSortingTimes(prev => [...prev, sortTime]);
 
     const bin = bins.find(b => b.id === binId);
