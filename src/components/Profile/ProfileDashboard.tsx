@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { ArrowLeft, Trophy, Target, Calendar, TrendingUp, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 import LogoutButton from '../Game/LogoutButton';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import LanguageToggle from '@/components/ui/LanguageToggle';

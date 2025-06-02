@@ -1,14 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 import WasteItem from './WasteItem';
-import FeedbackPopup from './FeedbackPopup';
-import LevelUpAnimation from './LevelUpAnimation';
-import GameHeader from './GameHeader';
-import GameTimer from './GameTimer';
-import GameInstructions from './GameInstructions';
-import GameProgress from './GameProgress';
-import GameBinsGrid from './GameBinsGrid';
+import { 
+  FeedbackPopup, 
+  LevelUpAnimation, 
+  GameHeader, 
+  GameTimer, 
+  GameInstructions, 
+  GameProgress, 
+  GameBinsGrid 
+} from '@/features/game';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';

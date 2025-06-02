@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { User, Bot, Gamepad2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 import LogoutButton from './LogoutButton';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import LanguageToggle from '@/components/ui/LanguageToggle';

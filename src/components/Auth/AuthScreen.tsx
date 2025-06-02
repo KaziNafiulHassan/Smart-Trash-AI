@@ -1,10 +1,9 @@
-
 import React, { useState } from 'react';
 import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { profileService } from '@/services/profileService';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import LanguageToggle from '@/components/ui/LanguageToggle';
 
