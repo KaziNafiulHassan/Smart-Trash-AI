@@ -1,14 +1,14 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "ecosort-monorepo",
   "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "dev": "cd apps/frontend && npm run dev",
+    "build": "cd apps/frontend && npm run build",
+    "preview": "cd apps/frontend && npm run preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
