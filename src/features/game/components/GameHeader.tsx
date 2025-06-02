@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { ArrowLeft, Star, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 import LogoutButton from './LogoutButton';
-import ThemeToggle from '@/components/ui/ThemeToggle';
+import { ThemeToggle } from '@/shared/components/ui';
 
 interface GameHeaderProps {
   language: Language;

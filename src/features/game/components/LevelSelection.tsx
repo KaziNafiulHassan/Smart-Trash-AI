@@ -1,10 +1,8 @@
-
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
-import ThemeToggle from '@/components/ui/ThemeToggle';
-import LanguageToggle from '@/components/ui/LanguageToggle';
+import { Language } from '@/types/common';
+import { ThemeToggle, LanguageToggle } from '@/shared/components/ui';
 
 interface LevelSelectionProps {
   language: Language;

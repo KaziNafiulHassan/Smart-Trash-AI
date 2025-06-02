@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 
 interface GameTimerProps {
   language: Language;

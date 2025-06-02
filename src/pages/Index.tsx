@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthScreen from '@/components/Auth/AuthScreen';
-import OnboardingScreen from '@/components/Auth/OnboardingScreen';
+import { OnboardingScreen } from '@/features/auth';
 import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
-
-export type Language = 'EN' | 'DE';
-export type Screen = 'auth' | 'onboarding' | 'gameHome' | 'gameLevel' | 'profile' | 'realtimeSorting';
+import { Language, Screen } from '@/types/common';
 
 const Index = () => {
   const { user, loading } = useAuth();

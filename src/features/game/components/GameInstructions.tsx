@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 
 interface GameInstructionsProps {
   language: Language;

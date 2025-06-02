@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
-import WasteItem from '@/components/Game/WasteItem';
-import WasteBin from '@/components/Game/WasteBin';
+import { Language } from '@/types/common';
+import WasteItem from '@/features/game/components/WasteItem';
+import WasteBin from '@/features/game/components/WasteBin';
 
 interface OnboardingScreenProps {
   language: Language;

@@ -2,7 +2,7 @@
 import React from 'react';
 import { Leaf, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 
 interface WelcomeScreenProps {
   onLanguageSelect: (language: Language) => void;

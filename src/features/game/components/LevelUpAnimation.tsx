@@ -1,8 +1,7 @@
-
 import React, { useEffect, useState } from 'react';
 import { Star, Trophy, Award, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 
 interface LevelUpAnimationProps {
   language: Language;

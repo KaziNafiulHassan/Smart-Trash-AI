@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { X, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 
 interface FeedbackPopupProps {
   feedback: {

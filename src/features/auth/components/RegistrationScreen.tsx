@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { User, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Language } from '@/pages/Index';
+import { Language } from '@/types/common';
 
 interface RegistrationScreenProps {
   language: Language;
