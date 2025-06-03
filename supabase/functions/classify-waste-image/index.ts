@@ -69,17 +69,17 @@ serve(async (req) => {
     const confidence = topPrediction.score;
     const predictedCategory = topPrediction.label;
 
-    // Map predicted category to bin type
-    const categoryToBin = {
+    // Map predicted category to bin type - ensure these match the database enum
+    const categoryToBin: Record<string, 'paper' | 'plastic' | 'glass' | 'bio' | 'residual' | 'hazardous' | 'bulky'> = {
       'cardboard': 'paper',
       'glass': 'glass', 
-      'metal': 'metal',
+      'metal': 'residual',
       'paper': 'paper',
       'plastic': 'plastic',
-      'trash': 'general'
+      'trash': 'residual'
     };
 
-    const predictedBin = categoryToBin[predictedCategory.toLowerCase()] || 'general';
+    const predictedBin = categoryToBin[predictedCategory.toLowerCase()] || 'residual';
 
     // Store image in Supabase Storage (temporary)
     const fileName = `${userId}_${Date.now()}.jpg`;
@@ -121,19 +121,25 @@ serve(async (req) => {
         paper: "Great! Paper items like cardboard, newspapers, and magazines should go in the paper bin. 💡 Tip: Remove any plastic coatings or tape before recycling.",
         plastic: "Correct! Plastic items like bottles, containers, and bags belong in the plastic bin. 💡 Tip: Clean containers and check the recycling number for proper sorting.",
         glass: "Perfect! Glass bottles and jars should go in the glass bin. 💡 Tip: Remove caps and lids, and avoid broken glass in regular recycling.",
-        metal: "Excellent! Metal cans, foil, and containers belong in the metal bin. 💡 Tip: Rinse food containers and crush cans to save space.",
-        general: "This item goes in the general waste bin. 💡 Tip: Some items can't be recycled and need special disposal methods."
+        bio: "Excellent! Organic waste like food scraps and garden waste belongs in the bio bin. 💡 Tip: Make sure items are free of plastic packaging.",
+        residual: "This item goes in the residual waste bin. 💡 Tip: Some items can't be recycled and need special disposal methods.",
+        metal: "Great! Metal items belong in the metal recycling. 💡 Tip: Rinse food containers and crush cans to save space.",
+        hazardous: "Important! This item requires special hazardous waste disposal. 💡 Tip: Never put hazardous materials in regular bins.",
+        bulky: "This is bulky waste that requires special collection. 💡 Tip: Contact local waste management for pickup arrangements."
       },
       DE: {
         paper: "Toll! Papierartikel wie Karton, Zeitungen und Magazine gehören in die Papiertonne. 💡 Tipp: Entfernen Sie Plastikbeschichtungen oder Klebeband vor dem Recycling.",
         plastic: "Richtig! Plastikartikel wie Flaschen, Behälter und Beutel gehören in die Plastiktonne. 💡 Tipp: Reinigen Sie Behälter und prüfen Sie die Recycling-Nummer.",
         glass: "Perfekt! Glasflaschen und -gläser gehören in die Glastonne. 💡 Tipp: Entfernen Sie Verschlüsse und Deckel, zerbrochenes Glas nicht ins normale Recycling.",
-        metal: "Ausgezeichnet! Metalldosen, Folie und Behälter gehören in die Metalltonne. 💡 Tipp: Spülen Sie Lebensmittelbehälter aus und zerdrücken Sie Dosen.",
-        general: "Dieser Artikel gehört in den Restmüll. 💡 Tipp: Manche Artikel können nicht recycelt werden und brauchen spezielle Entsorgung."
+        bio: "Ausgezeichnet! Organische Abfälle wie Essensreste und Gartenabfälle gehören in die Biotonne. 💡 Tipp: Stellen Sie sicher, dass Artikel frei von Plastikverpackungen sind.",
+        residual: "Dieser Artikel gehört in den Restmüll. 💡 Tipp: Manche Artikel können nicht recycelt werden und brauchen spezielle Entsorgung.",
+        metal: "Toll! Metallartikel gehören ins Metallrecycling. 💡 Tipp: Spülen Sie Lebensmittelbehälter aus und zerdrücken Sie Dosen.",
+        hazardous: "Wichtig! Dieser Artikel erfordert spezielle Sondermüllentsorgung. 💡 Tipp: Geben Sie Gefahrstoffe niemals in normale Tonnen.",
+        bulky: "Das ist Sperrmüll, der spezielle Abholung erfordert. 💡 Tipp: Kontaktieren Sie die örtliche Müllabfuhr für Abholtermine."
       }
     };
 
-    const feedback = feedbackTexts[language][predictedBin] || feedbackTexts[language].general;
+    const feedback = feedbackTexts[language][predictedBin] || feedbackTexts[language].residual;
 
     const result = {
       predictedCategory,

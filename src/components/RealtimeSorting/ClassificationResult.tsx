@@ -4,10 +4,12 @@ import { Check, X, Recycle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
 
+type BinType = 'paper' | 'plastic' | 'glass' | 'bio' | 'residual' | 'hazardous' | 'bulky';
+
 interface ClassificationResultProps {
   result: {
     predictedCategory: string;
-    predictedBin: string;
+    predictedBin: BinType;
     confidence: number;
     feedback: string;
     imageUrl?: string;
@@ -15,7 +17,7 @@ interface ClassificationResultProps {
   };
   capturedImage: string | null;
   language: Language;
-  onFeedback: (isCorrect: boolean, selectedBin?: string) => void;
+  onFeedback: (isCorrect: boolean, selectedBin?: BinType) => void;
 }
 
 const texts = {
@@ -31,8 +33,10 @@ const texts = {
     paper: 'Paper',
     plastic: 'Plastic', 
     glass: 'Glass',
-    metal: 'Metal',
-    general: 'General Waste',
+    bio: 'Bio Waste',
+    residual: 'Residual Waste',
+    hazardous: 'Hazardous',
+    bulky: 'Bulky Waste',
     submit: 'Submit Feedback',
     thankYou: 'Thank you for your feedback!'
   },
@@ -48,27 +52,33 @@ const texts = {
     paper: 'Papier',
     plastic: 'Plastik',
     glass: 'Glas', 
-    metal: 'Metall',
-    general: 'Restmüll',
+    bio: 'Biomüll',
+    residual: 'Restmüll',
+    hazardous: 'Sondermüll',
+    bulky: 'Sperrmüll',
     submit: 'Feedback senden',
     thankYou: 'Vielen Dank für Ihr Feedback!'
   }
 };
 
-const binColors = {
+const binColors: Record<BinType, string> = {
   paper: 'bg-blue-500',
   plastic: 'bg-yellow-500',
   glass: 'bg-green-500',
-  metal: 'bg-gray-500',
-  general: 'bg-red-500'
+  bio: 'bg-green-600',
+  residual: 'bg-gray-500',
+  hazardous: 'bg-red-500',
+  bulky: 'bg-purple-500'
 };
 
-const binIcons = {
+const binIcons: Record<BinType, string> = {
   paper: '📄',
   plastic: '♻️',
   glass: '🍶',
-  metal: '🥫',
-  general: '🗑️'
+  bio: '🍎',
+  residual: '🗑️',
+  hazardous: '☢️',
+  bulky: '📦'
 };
 
 const ClassificationResult: React.FC<ClassificationResultProps> = ({
@@ -79,7 +89,7 @@ const ClassificationResult: React.FC<ClassificationResultProps> = ({
 }) => {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [showCorrection, setShowCorrection] = useState(false);
-  const [selectedBin, setSelectedBin] = useState<string>('');
+  const [selectedBin, setSelectedBin] = useState<BinType | ''>('');
 
   const t = texts[language];
 
@@ -94,13 +104,13 @@ const ClassificationResult: React.FC<ClassificationResultProps> = ({
 
   const handleCorrectionSubmit = () => {
     if (selectedBin) {
-      onFeedback(false, selectedBin);
+      onFeedback(false, selectedBin as BinType);
       setFeedbackSubmitted(true);
       setShowCorrection(false);
     }
   };
 
-  const binOptions = ['paper', 'plastic', 'glass', 'metal', 'general'];
+  const binOptions: BinType[] = ['paper', 'plastic', 'glass', 'bio', 'residual', 'hazardous', 'bulky'];
 
   return (
     <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-6 space-y-4">
@@ -128,10 +138,10 @@ const ClassificationResult: React.FC<ClassificationResultProps> = ({
           <div className="flex justify-between items-center">
             <span className="text-white/80">{t.binType}:</span>
             <div className="flex items-center space-x-2">
-              <span className={`w-6 h-6 rounded-full ${binColors[result.predictedBin as keyof typeof binColors]} flex items-center justify-center text-white text-sm`}>
-                {binIcons[result.predictedBin as keyof typeof binIcons]}
+              <span className={`w-6 h-6 rounded-full ${binColors[result.predictedBin]} flex items-center justify-center text-white text-sm`}>
+                {binIcons[result.predictedBin]}
               </span>
-              <span className="font-semibold text-white capitalize">{t[result.predictedBin as keyof typeof t] || result.predictedBin}</span>
+              <span className="font-semibold text-white capitalize">{t[result.predictedBin]}</span>
             </div>
           </div>
           
@@ -183,12 +193,12 @@ const ClassificationResult: React.FC<ClassificationResultProps> = ({
                   variant={selectedBin === bin ? "default" : "outline"}
                   className={`p-3 ${
                     selectedBin === bin 
-                      ? `${binColors[bin as keyof typeof binColors]} text-white` 
+                      ? `${binColors[bin]} text-white` 
                       : 'bg-white/20 border-white/30 text-white hover:bg-white/30'
                   }`}
                 >
-                  <span className="text-lg mr-2">{binIcons[bin as keyof typeof binIcons]}</span>
-                  {t[bin as keyof typeof t]}
+                  <span className="text-lg mr-2">{binIcons[bin]}</span>
+                  {t[bin]}
                 </Button>
               ))}
             </div>
