@@ -33,13 +33,34 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Use your specific Hugging Face model
+    // Use your specific SmartTrashAI model
+    const hfToken = Deno.env.get('HUGGING_FACE_TOKEN');
+    const modelName = Deno.env.get('SmartTrashAI_CV_Model-efficientNetb0');
+    
+    if (!hfToken) {
+      console.error('HUGGING_FACE_TOKEN not found');
+      return new Response(
+        JSON.stringify({ error: 'Hugging Face token not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!modelName) {
+      console.error('SmartTrashAI_CV_Model-efficientNetb0 not found');
+      return new Response(
+        JSON.stringify({ error: 'Model name not configured' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Using model:', modelName);
+
     const hfResponse = await fetch(
-      'https://api-inference.huggingface.co/models/your-specific-model-name', // You need to provide the actual model name
+      `https://api-inference.huggingface.co/models/${modelName}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${Deno.env.get('HUGGING_FACE_TOKEN')}`,
+          'Authorization': `Bearer ${hfToken}`,
           'Content-Type': 'application/octet-stream',
         },
         body: imageData,
@@ -48,7 +69,7 @@ serve(async (req) => {
 
     if (!hfResponse.ok) {
       const errorText = await hfResponse.text();
-      console.error('Hugging Face API error:', errorText);
+      console.error('Hugging Face API error:', hfResponse.status, errorText);
       
       // If the model is loading, return a temporary response
       if (hfResponse.status === 503) {
@@ -59,7 +80,11 @@ serve(async (req) => {
       }
       
       return new Response(
-        JSON.stringify({ error: 'Classification service unavailable', details: errorText }),
+        JSON.stringify({ 
+          error: 'Classification service unavailable', 
+          details: `${hfResponse.status}: ${errorText}`,
+          model: modelName 
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -79,14 +104,12 @@ serve(async (req) => {
     const predictedCategory = topPrediction.label;
     const confidence = topPrediction.score || 0.8;
 
-    console.log('Predicted category:', predictedCategory);
+    console.log('Predicted category:', predictedCategory, 'with confidence:', confidence);
 
     // Query the categories table to find matching category and get bin type and rule
     const { data: categoryData, error: categoryError } = await supabaseClient
       .from('categories')
-      .select('*')
-      .ilike('name_en', `%${predictedCategory}%`)
-      .limit(1);
+      .select('*');
 
     let matchedCategory = null;
     let binType = 'residual'; // default fallback
@@ -95,28 +118,26 @@ serve(async (req) => {
     if (categoryError) {
       console.error('Category lookup error:', categoryError);
     } else if (categoryData && categoryData.length > 0) {
-      matchedCategory = categoryData[0];
-      binType = matchedCategory.bin_type;
-      rule = language === 'DE' ? matchedCategory.rule_de : matchedCategory.rule_en;
-      console.log('Matched category:', matchedCategory);
-    } else {
-      // If no exact match, try to find a similar category
-      const { data: similarCategories } = await supabaseClient
-        .from('categories')
-        .select('*');
+      console.log('Available categories:', categoryData.map(c => ({ name_en: c.name_en, name_de: c.name_de })));
+      
+      // Try to find exact match first
+      matchedCategory = categoryData.find(category => {
+        const categoryNameEn = category.name_en?.toLowerCase() || '';
+        const categoryNameDe = category.name_de?.toLowerCase() || '';
+        const predicted = predictedCategory.toLowerCase();
+        
+        return categoryNameEn.includes(predicted) || 
+               predicted.includes(categoryNameEn) ||
+               categoryNameDe.includes(predicted) || 
+               predicted.includes(categoryNameDe);
+      });
 
-      // Simple similarity matching - you might want to improve this logic
-      if (similarCategories) {
-        for (const category of similarCategories) {
-          const categoryName = language === 'DE' ? category.name_de : category.name_en;
-          if (categoryName.toLowerCase().includes(predictedCategory.toLowerCase()) || 
-              predictedCategory.toLowerCase().includes(categoryName.toLowerCase())) {
-            matchedCategory = category;
-            binType = category.bin_type;
-            rule = language === 'DE' ? category.rule_de : category.rule_en;
-            break;
-          }
-        }
+      if (matchedCategory) {
+        binType = matchedCategory.bin_type;
+        rule = language === 'DE' ? matchedCategory.rule_de : matchedCategory.rule_en;
+        console.log('Matched category:', matchedCategory);
+      } else {
+        console.log('No matching category found for:', predictedCategory);
       }
     }
 
@@ -191,7 +212,8 @@ serve(async (req) => {
       rule,
       categoryDetails: matchedCategory,
       imageUrl,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      modelUsed: modelName
     };
 
     console.log('Classification result:', result);
