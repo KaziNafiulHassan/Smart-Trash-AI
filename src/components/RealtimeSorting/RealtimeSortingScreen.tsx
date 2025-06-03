@@ -8,6 +8,8 @@ import CameraCapture from './CameraCapture';
 import ClassificationResult from './ClassificationResult';
 import { useToast } from '@/hooks/use-toast';
 
+type BinType = 'paper' | 'plastic' | 'glass' | 'bio' | 'residual' | 'hazardous' | 'bulky';
+
 interface RealtimeSortingScreenProps {
   language: Language;
   user: any;
@@ -117,7 +119,7 @@ const RealtimeSortingScreen: React.FC<RealtimeSortingScreenProps> = ({
     setError(null);
   }, []);
 
-  const handleFeedback = useCallback(async (isCorrect: boolean, selectedBin?: string) => {
+  const handleFeedback = useCallback(async (isCorrect: boolean, selectedBin?: BinType) => {
     if (!classificationResult) return;
 
     try {
