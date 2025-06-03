@@ -33,9 +33,9 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Use a more reliable waste classification model
+    // Use your specific Hugging Face model
     const hfResponse = await fetch(
-      'https://api-inference.huggingface.co/models/microsoft/resnet-50',
+      'https://api-inference.huggingface.co/models/your-specific-model-name', // You need to provide the actual model name
       {
         method: 'POST',
         headers: {
@@ -74,25 +74,51 @@ serve(async (req) => {
       );
     }
 
-    // Get the top prediction and simulate waste classification
+    // Get the top prediction
     const topPrediction = predictions[0];
+    const predictedCategory = topPrediction.label;
     const confidence = topPrediction.score || 0.8;
-    
-    // Simulate waste classification based on common items
-    const wasteCategories = ['plastic', 'paper', 'glass', 'metal', 'organic'];
-    const predictedCategory = wasteCategories[Math.floor(Math.random() * wasteCategories.length)];
 
-    // Map predicted category to bin type
-    const categoryToBin: Record<string, 'paper' | 'plastic' | 'glass' | 'bio' | 'residual' | 'hazardous' | 'bulky'> = {
-      'organic': 'bio',
-      'glass': 'glass',
-      'metal': 'residual',
-      'paper': 'paper',
-      'plastic': 'plastic',
-      'cardboard': 'paper'
-    };
+    console.log('Predicted category:', predictedCategory);
 
-    const predictedBin = categoryToBin[predictedCategory] || 'residual';
+    // Query the categories table to find matching category and get bin type and rule
+    const { data: categoryData, error: categoryError } = await supabaseClient
+      .from('categories')
+      .select('*')
+      .ilike('name_en', `%${predictedCategory}%`)
+      .limit(1);
+
+    let matchedCategory = null;
+    let binType = 'residual'; // default fallback
+    let rule = '';
+
+    if (categoryError) {
+      console.error('Category lookup error:', categoryError);
+    } else if (categoryData && categoryData.length > 0) {
+      matchedCategory = categoryData[0];
+      binType = matchedCategory.bin_type;
+      rule = language === 'DE' ? matchedCategory.rule_de : matchedCategory.rule_en;
+      console.log('Matched category:', matchedCategory);
+    } else {
+      // If no exact match, try to find a similar category
+      const { data: similarCategories } = await supabaseClient
+        .from('categories')
+        .select('*');
+
+      // Simple similarity matching - you might want to improve this logic
+      if (similarCategories) {
+        for (const category of similarCategories) {
+          const categoryName = language === 'DE' ? category.name_de : category.name_en;
+          if (categoryName.toLowerCase().includes(predictedCategory.toLowerCase()) || 
+              predictedCategory.toLowerCase().includes(categoryName.toLowerCase())) {
+            matchedCategory = category;
+            binType = category.bin_type;
+            rule = language === 'DE' ? category.rule_de : category.rule_en;
+            break;
+          }
+        }
+      }
+    }
 
     // Store image in Supabase Storage
     const fileName = `${userId}_${Date.now()}.jpg`;
@@ -109,6 +135,8 @@ serve(async (req) => {
         .from('realtime-sorting-images')
         .getPublicUrl(fileName);
       imageUrl = data.publicUrl;
+    } else {
+      console.error('Image upload error:', uploadError);
     }
 
     // Save classification result to database
@@ -118,7 +146,7 @@ serve(async (req) => {
         user_id: userId,
         image_url: imageUrl,
         predicted_category: predictedCategory,
-        predicted_bin: predictedBin,
+        predicted_bin: binType,
         confidence: confidence,
         user_feedback_correct: null,
         user_selected_bin: null
@@ -128,35 +156,40 @@ serve(async (req) => {
       console.error('Database error:', dbError);
     }
 
-    // Generate educational feedback
-    const feedbackTexts = {
-      EN: {
-        paper: "Great! Paper items like cardboard, newspapers, and magazines should go in the paper bin. 💡 Tip: Remove any plastic coatings or tape before recycling.",
-        plastic: "Correct! Plastic items like bottles, containers, and bags belong in the plastic bin. 💡 Tip: Clean containers and check the recycling number for proper sorting.",
-        glass: "Perfect! Glass bottles and jars should go in the glass bin. 💡 Tip: Remove caps and lids, and avoid broken glass in regular recycling.",
-        bio: "Excellent! Organic waste like food scraps and garden waste belongs in the bio bin. 💡 Tip: Make sure items are free of plastic packaging.",
-        residual: "This item goes in the residual waste bin. 💡 Tip: Some items can't be recycled and need special disposal methods.",
-        hazardous: "Important! This item requires special hazardous waste disposal. 💡 Tip: Never put hazardous materials in regular bins.",
-        bulky: "This is bulky waste that requires special collection. 💡 Tip: Contact local waste management for pickup arrangements."
-      },
-      DE: {
-        paper: "Toll! Papierartikel wie Karton, Zeitungen und Magazine gehören in die Papiertonne. 💡 Tipp: Entfernen Sie Plastikbeschichtungen oder Klebeband vor dem Recycling.",
-        plastic: "Richtig! Plastikartikel wie Flaschen, Behälter und Beutel gehören in die Plastiktonne. 💡 Tipp: Reinigen Sie Behälter und prüfen Sie die Recycling-Nummer.",
-        glass: "Perfekt! Glasflaschen und -gläser gehören in die Glastonne. 💡 Tipp: Entfernen Sie Verschlüsse und Deckel, zerbrochenes Glas nicht ins normale Recycling.",
-        bio: "Ausgezeichnet! Organische Abfälle wie Essensreste und Gartenabfälle gehören in die Biotonne. 💡 Tipp: Stellen Sie sicher, dass Artikel frei von Plastikverpackungen sind.",
-        residual: "Dieser Artikel gehört in den Restmüll. 💡 Tipp: Manche Artikel können nicht recycelt werden und brauchen spezielle Entsorgung.",
-        hazardous: "Wichtig! Dieser Artikel erfordert spezielle Sondermüllentsorgung. 💡 Tipp: Geben Sie Gefahrstoffe niemals in normale Tonnen.",
-        bulky: "Das ist Sperrmüll, der spezielle Abholung erfordert. 💡 Tipp: Kontaktieren Sie die örtliche Müllabfuhr für Abholtermine."
-      }
-    };
-
-    const feedback = feedbackTexts[language][predictedBin] || feedbackTexts[language].residual;
+    // Generate feedback based on the rule from categories table
+    let feedback = rule;
+    if (!feedback) {
+      // Fallback feedback if no rule found
+      const fallbackTexts = {
+        EN: {
+          paper: "This item belongs to paper waste. Please dispose of it in the paper bin.",
+          plastic: "This item belongs to plastic waste. Please dispose of it in the plastic bin.",
+          glass: "This item belongs to glass waste. Please dispose of it in the glass bin.",
+          bio: "This item belongs to organic waste. Please dispose of it in the bio bin.",
+          residual: "This item belongs to residual waste. Please dispose of it in the residual waste bin.",
+          hazardous: "This item requires special hazardous waste disposal.",
+          bulky: "This item is bulky waste that requires special collection."
+        },
+        DE: {
+          paper: "Dieser Artikel gehört zu Papiermüll. Bitte entsorgen Sie ihn in der Papiertonne.",
+          plastic: "Dieser Artikel gehört zu Plastikmüll. Bitte entsorgen Sie ihn in der Plastiktonne.",
+          glass: "Dieser Artikel gehört zu Glasmüll. Bitte entsorgen Sie ihn in der Glastonne.",
+          bio: "Dieser Artikel gehört zu Biomüll. Bitte entsorgen Sie ihn in der Biotonne.",
+          residual: "Dieser Artikel gehört zu Restmüll. Bitte entsorgen Sie ihn in der Restmülltonne.",
+          hazardous: "Dieser Artikel erfordert spezielle Sondermüllentsorgung.",
+          bulky: "Dieser Artikel ist Sperrmüll, der spezielle Abholung erfordert."
+        }
+      };
+      feedback = fallbackTexts[language][binType] || fallbackTexts[language].residual;
+    }
 
     const result = {
       predictedCategory,
-      predictedBin,
+      predictedBin: binType,
       confidence: Math.round(confidence * 100),
       feedback,
+      rule,
+      categoryDetails: matchedCategory,
       imageUrl,
       timestamp: new Date().toISOString()
     };
