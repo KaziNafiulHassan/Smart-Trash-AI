@@ -5,6 +5,7 @@ import { OnboardingScreen } from '@/features/auth';
 import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
+import RealtimeSortingScreen from '@/components/RealtimeSorting/RealtimeSortingScreen';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
 import { Language, Screen } from '@/types/common';
@@ -170,18 +171,11 @@ const Index = () => {
         );
       case 'realtimeSorting':
         return (
-          <div className="min-h-screen flex items-center justify-center text-white">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold mb-4">Real-time Sorting</h1>
-              <p className="text-xl mb-8">Coming Soon!</p>
-              <button
-                onClick={handleBackToHome}
-                className="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-lg"
-              >
-                Back to Home
-              </button>
-            </div>
-          </div>
+          <RealtimeSortingScreen
+            language={language}
+            user={user}
+            onBackToHome={handleBackToHome}
+          />
         );
       default:
         return <AuthScreen language={language} onAuth={handleAuth} onLanguageChange={handleLanguageChange} />;
