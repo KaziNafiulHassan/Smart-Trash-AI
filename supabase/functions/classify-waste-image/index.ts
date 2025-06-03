@@ -33,18 +33,46 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Check for Hugging Face token
+    // Enhanced debugging for Hugging Face token
     const hfToken = Deno.env.get('HUGGING_FACE_TOKEN');
-    console.log('HF Token exists:', !!hfToken);
-    console.log('Available env vars:', Object.keys(Deno.env.toObject()));
+    const allEnvVars = Deno.env.toObject();
     
-    if (!hfToken) {
+    console.log('=== DEBUGGING TOKEN ISSUE ===');
+    console.log('HF Token exists:', !!hfToken);
+    console.log('HF Token length:', hfToken?.length || 0);
+    console.log('All available env vars:', Object.keys(allEnvVars));
+    console.log('Checking for variations of token name...');
+    
+    // Check for common variations
+    const tokenVariations = [
+      'HUGGING_FACE_TOKEN',
+      'HUGGINGFACE_TOKEN', 
+      'HF_TOKEN',
+      'HUGGING_FACE_API_KEY'
+    ];
+    
+    let actualToken = hfToken;
+    let usedKey = 'HUGGING_FACE_TOKEN';
+    
+    for (const variation of tokenVariations) {
+      const token = Deno.env.get(variation);
+      if (token) {
+        console.log(`Found token with key: ${variation}`);
+        actualToken = token;
+        usedKey = variation;
+        break;
+      }
+    }
+    
+    if (!actualToken) {
       console.error('HUGGING_FACE_TOKEN not found in environment variables');
+      console.error('Available env vars:', Object.keys(allEnvVars));
       return new Response(
         JSON.stringify({ 
           error: 'Hugging Face token not configured', 
           debug: 'HUGGING_FACE_TOKEN environment variable is missing',
-          availableVars: Object.keys(Deno.env.toObject())
+          availableVars: Object.keys(allEnvVars),
+          checkedVariations: tokenVariations
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -52,14 +80,16 @@ serve(async (req) => {
 
     const modelName = 'Nafi007/EfficientNetB0';
     console.log('Using model:', modelName);
-    console.log('Token length:', hfToken.length);
+    console.log('Using token key:', usedKey);
+    console.log('Token length:', actualToken.length);
+    console.log('Token starts with:', actualToken.substring(0, 8) + '...');
 
     const hfResponse = await fetch(
       `https://api-inference.huggingface.co/models/${modelName}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${hfToken}`,
+          'Authorization': `Bearer ${actualToken}`,
           'Content-Type': 'application/octet-stream',
         },
         body: imageData,
@@ -86,8 +116,9 @@ serve(async (req) => {
           error: 'Classification service unavailable', 
           details: `${hfResponse.status}: ${errorText}`,
           model: modelName,
-          tokenProvided: !!hfToken,
-          tokenLength: hfToken?.length || 0
+          tokenProvided: !!actualToken,
+          tokenLength: actualToken?.length || 0,
+          tokenKey: usedKey
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
