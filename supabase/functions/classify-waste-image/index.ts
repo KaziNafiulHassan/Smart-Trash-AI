@@ -33,22 +33,14 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Use your specific SmartTrashAI model
+    // Use your specific fine-tuned model
     const hfToken = Deno.env.get('HUGGING_FACE_TOKEN');
-    const modelName = Deno.env.get('SmartTrashAI_CV_Model-efficientNetb0');
+    const modelName = 'Nafi007/EfficientNetB0'; // Your specific model
     
     if (!hfToken) {
       console.error('HUGGING_FACE_TOKEN not found');
       return new Response(
         JSON.stringify({ error: 'Hugging Face token not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (!modelName) {
-      console.error('SmartTrashAI_CV_Model-efficientNetb0 not found');
-      return new Response(
-        JSON.stringify({ error: 'Model name not configured' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
