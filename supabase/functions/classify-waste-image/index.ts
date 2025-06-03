@@ -33,19 +33,26 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Use your specific fine-tuned model
+    // Check for Hugging Face token
     const hfToken = Deno.env.get('HUGGING_FACE_TOKEN');
-    const modelName = 'Nafi007/EfficientNetB0'; // Your specific model
+    console.log('HF Token exists:', !!hfToken);
+    console.log('Available env vars:', Object.keys(Deno.env.toObject()));
     
     if (!hfToken) {
-      console.error('HUGGING_FACE_TOKEN not found');
+      console.error('HUGGING_FACE_TOKEN not found in environment variables');
       return new Response(
-        JSON.stringify({ error: 'Hugging Face token not configured' }),
+        JSON.stringify({ 
+          error: 'Hugging Face token not configured', 
+          debug: 'HUGGING_FACE_TOKEN environment variable is missing',
+          availableVars: Object.keys(Deno.env.toObject())
+        }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    const modelName = 'Nafi007/EfficientNetB0';
     console.log('Using model:', modelName);
+    console.log('Token length:', hfToken.length);
 
     const hfResponse = await fetch(
       `https://api-inference.huggingface.co/models/${modelName}`,
@@ -58,6 +65,9 @@ serve(async (req) => {
         body: imageData,
       }
     );
+
+    console.log('HF Response status:', hfResponse.status);
+    console.log('HF Response headers:', Object.fromEntries(hfResponse.headers.entries()));
 
     if (!hfResponse.ok) {
       const errorText = await hfResponse.text();
@@ -75,7 +85,9 @@ serve(async (req) => {
         JSON.stringify({ 
           error: 'Classification service unavailable', 
           details: `${hfResponse.status}: ${errorText}`,
-          model: modelName 
+          model: modelName,
+          tokenProvided: !!hfToken,
+          tokenLength: hfToken?.length || 0
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
