@@ -33,63 +33,35 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Enhanced debugging for Hugging Face token
-    const hfToken = Deno.env.get('HUGGING_FACE_TOKEN');
-    const allEnvVars = Deno.env.toObject();
+    // Get and clean the Hugging Face token
+    const rawToken = Deno.env.get('HUGGING_FACE_TOKEN');
+    console.log('Raw token found:', !!rawToken);
     
-    console.log('=== DEBUGGING TOKEN ISSUE ===');
-    console.log('HF Token exists:', !!hfToken);
-    console.log('HF Token length:', hfToken?.length || 0);
-    console.log('All available env vars:', Object.keys(allEnvVars));
-    console.log('Checking for variations of token name...');
-    
-    // Check for common variations
-    const tokenVariations = [
-      'HUGGING_FACE_TOKEN',
-      'HUGGINGFACE_TOKEN', 
-      'HF_TOKEN',
-      'HUGGING_FACE_API_KEY'
-    ];
-    
-    let actualToken = hfToken;
-    let usedKey = 'HUGGING_FACE_TOKEN';
-    
-    for (const variation of tokenVariations) {
-      const token = Deno.env.get(variation);
-      if (token) {
-        console.log(`Found token with key: ${variation}`);
-        actualToken = token;
-        usedKey = variation;
-        break;
-      }
-    }
-    
-    if (!actualToken) {
+    if (!rawToken) {
       console.error('HUGGING_FACE_TOKEN not found in environment variables');
-      console.error('Available env vars:', Object.keys(allEnvVars));
       return new Response(
         JSON.stringify({ 
           error: 'Hugging Face token not configured', 
-          debug: 'HUGGING_FACE_TOKEN environment variable is missing',
-          availableVars: Object.keys(allEnvVars),
-          checkedVariations: tokenVariations
+          debug: 'HUGGING_FACE_TOKEN environment variable is missing'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Clean the token by removing whitespace, carriage returns, and newlines
+    const cleanToken = rawToken.trim().replace(/[\r\n\t]/g, '');
+    console.log('Token cleaned, length:', cleanToken.length);
+    console.log('Token starts with:', cleanToken.substring(0, 8) + '...');
+
     const modelName = 'Nafi007/EfficientNetB0';
     console.log('Using model:', modelName);
-    console.log('Using token key:', usedKey);
-    console.log('Token length:', actualToken.length);
-    console.log('Token starts with:', actualToken.substring(0, 8) + '...');
 
     const hfResponse = await fetch(
       `https://api-inference.huggingface.co/models/${modelName}`,
       {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${actualToken}`,
+          'Authorization': `Bearer ${cleanToken}`,
           'Content-Type': 'application/octet-stream',
         },
         body: imageData,
@@ -116,9 +88,8 @@ serve(async (req) => {
           error: 'Classification service unavailable', 
           details: `${hfResponse.status}: ${errorText}`,
           model: modelName,
-          tokenProvided: !!actualToken,
-          tokenLength: actualToken?.length || 0,
-          tokenKey: usedKey
+          tokenProvided: !!cleanToken,
+          tokenLength: cleanToken?.length || 0
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
