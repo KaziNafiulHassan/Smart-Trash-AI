@@ -62,7 +62,7 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
             <p className="mb-3">{mainMessage}</p>
             {tipMessage && (
               <p className="text-base bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg border-l-4 border-blue-400">
-                <span className="font-semibold">🤖 {language === 'EN' ? 'Tip' : 'Tipp'}:</span> {tipMessage}
+                <span className="text-2xl">🤖</span> {tipMessage}
               </p>
             )}
           </div>
