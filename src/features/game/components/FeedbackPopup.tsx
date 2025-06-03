@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { X, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -60,29 +61,32 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
           <div className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
             <p className="mb-3">{mainMessage}</p>
             {tipMessage && (
-              <p className="text-sm bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg border-l-4 border-blue-400">
-                <span className="font-semibold">💡 {language === 'EN' ? 'Tip' : 'Tipp'}:</span> {tipMessage}
+              <p className="text-base bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg border-l-4 border-blue-400">
+                <span className="font-semibold">🤖 {language === 'EN' ? 'Tip' : 'Tipp'}:</span> {tipMessage}
               </p>
             )}
           </div>
 
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-              {feedback.item.image_url ? (
-                <img 
-                  src={feedback.item.image_url} 
-                  alt={feedback.item.item_name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-2xl">📦</span>
-              )}
+          {/* Only show visual indicator if there's no tip message */}
+          {!tipMessage && (
+            <div className="flex items-center justify-center space-x-3 mb-6">
+              <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+                {feedback.item.image_url ? (
+                  <img 
+                    src={feedback.item.image_url} 
+                    alt={feedback.item.item_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl">📦</span>
+                )}
+              </div>
+              <span className="text-2xl dark:text-gray-300">→</span>
+              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feedback.bin.color}`}>
+                <span className="text-white text-xl">🗑️</span>
+              </div>
             </div>
-            <span className="text-2xl dark:text-gray-300">→</span>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feedback.bin.color}`}>
-              <span className="text-white text-xl">🗑️</span>
-            </div>
-          </div>
+          )}
 
           <Button
             onClick={onClose}
