@@ -6,13 +6,16 @@ import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
 import RealtimeSortingScreen from '@/components/RealtimeSorting/RealtimeSortingScreen';
+import BackendArchitecture from '@/pages/BackendArchitecture';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
 import { Language, Screen } from '@/types/common';
 
+type ExtendedScreen = Screen | 'backendArchitecture';
+
 const Index = () => {
   const { user, loading } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<Screen>('auth');
+  const [currentScreen, setCurrentScreen] = useState<ExtendedScreen>('auth');
   const [language, setLanguage] = useState<Language>('EN');
   const [gameProgress, setGameProgress] = useState({
     level: 1,
@@ -121,6 +124,10 @@ const Index = () => {
     }
   };
 
+  const handleViewBackendArchitecture = () => {
+    setCurrentScreen('backendArchitecture');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex items-center justify-center">
@@ -148,6 +155,7 @@ const Index = () => {
             onLanguageChange={handleLanguageChange}
             onStartEcoSort={handleStartEcoSort}
             onStartRealtimeSorting={handleStartRealtimeSorting}
+            onViewBackendArchitecture={handleViewBackendArchitecture}
           />
         );
       case 'gameLevel':
@@ -175,6 +183,12 @@ const Index = () => {
             language={language}
             user={user}
             onBackToHome={handleBackToHome}
+          />
+        );
+      case 'backendArchitecture':
+        return (
+          <BackendArchitecture
+            onBack={handleBackToHome}
           />
         );
       default:
