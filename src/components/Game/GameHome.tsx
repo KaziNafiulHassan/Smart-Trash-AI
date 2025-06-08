@@ -1,10 +1,9 @@
-
 import React from 'react';
 import { User } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Play, User as UserIcon, Globe, Camera, BarChart3 } from 'lucide-react';
 import { Language } from '@/types/common';
-import LanguageToggle from '@/components/ui/LanguageToggle';
+import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import LogoutButton from './LogoutButton';
 
 interface GameHomeProps {
