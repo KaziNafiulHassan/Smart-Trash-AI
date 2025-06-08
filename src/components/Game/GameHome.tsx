@@ -1,14 +1,14 @@
 import React from 'react';
-import { User } from '@supabase/supabase-js';
+import { User, Bot, Gamepad2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Play, User as UserIcon, Globe, Camera, BarChart3 } from 'lucide-react';
 import { Language } from '@/types/common';
-import { LanguageToggle } from '@/components/ui/LanguageToggle';
 import LogoutButton from './LogoutButton';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import LanguageToggle from '@/components/ui/LanguageToggle';
 
 interface GameHomeProps {
   language: Language;
-  user: User;
+  user: any;
   gameProgress: {
     level: number;
     total_correct: number;
@@ -23,126 +23,133 @@ interface GameHomeProps {
   onLanguageChange: (language: Language) => void;
   onStartEcoSort: () => void;
   onStartRealtimeSorting: () => void;
-  onViewBackendArchitecture: () => void;
 }
 
-const GameHome: React.FC<GameHomeProps> = ({
-  language,
-  user,
-  gameProgress,
-  onStartLevel,
-  onOpenProfile,
+const texts = {
+  EN: {
+    title: 'Smart Trash AI',
+    subtitle: 'AI-Powered Waste Sorting Assistant',
+    welcomeMessage: 'Choose your sorting experience',
+    ecosortGame: 'EcoSort Game',
+    ecosortDescription: 'Learn waste sorting through interactive levels',
+    realtimeSorting: 'Real-time Sorting',
+    realtimeDescription: 'Get instant AI-powered sorting assistance',
+    profile: 'View Profile',
+    robotGreeting: 'Hello! I\'m your Smart Trash AI assistant!'
+  },
+  DE: {
+    title: 'Smart Trash AI',
+    subtitle: 'KI-gestützter Müllsortierassistent',
+    welcomeMessage: 'Wählen Sie Ihr Sortiererlebnis',
+    ecosortGame: 'EcoSort Spiel',
+    ecosortDescription: 'Lernen Sie Mülltrennung durch interaktive Level',
+    realtimeSorting: 'Echtzeit-Sortierung',
+    realtimeDescription: 'Erhalten Sie sofortige KI-gestützte Sortierhilfe',
+    profile: 'Profil Anzeigen',
+    robotGreeting: 'Hallo! Ich bin Ihr Smart Trash AI Assistent!'
+  }
+};
+
+const GameHome: React.FC<GameHomeProps> = ({ 
+  language, 
+  user, 
+  gameProgress, 
+  onStartLevel, 
+  onOpenProfile, 
   onLanguageChange,
   onStartEcoSort,
-  onStartRealtimeSorting,
-  onViewBackendArchitecture
+  onStartRealtimeSorting 
 }) => {
-  const texts = {
-    EN: {
-      welcome: 'Welcome back,',
-      level: 'Level',
-      totalCorrect: 'Total Correct',
-      totalAttempts: 'Total Attempts',
-      completedLevels: 'Completed Levels',
-      bestScore: 'Best Score',
-      currentStreak: 'Current Streak',
-      bestStreak: 'Best Streak',
-      startGame: 'Start Game',
-      openProfile: 'Open Profile',
-      ecoSort: 'Eco Sort Challenge',
-      realtimeSorting: 'Real-time Sorting',
-      backendArchitecture: 'Backend Architecture'
-    },
-    DE: {
-      welcome: 'Willkommen zurück,',
-      level: 'Level',
-      totalCorrect: 'Insgesamt Richtig',
-      totalAttempts: 'Gesamtversuche',
-      completedLevels: 'Abgeschlossene Level',
-      bestScore: 'Beste Punktzahl',
-      currentStreak: 'Aktuelle Serie',
-      bestStreak: 'Beste Serie',
-      startGame: 'Spiel Starten',
-      openProfile: 'Profil öffnen',
-      ecoSort: 'Eco Sort Challenge',
-      realtimeSorting: 'Echtzeit-Sortierung',
-      backendArchitecture: 'Backend Architektur'
-    },
-  };
-
   const t = texts[language];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 text-white">
-      <div className="container mx-auto p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">{t.welcome} {user.user_metadata?.name || 'User'}!</h1>
-            <p className="text-blue-100">Here's your progress:</p>
-          </div>
-          <div className="space-x-4 flex items-center">
-            <LanguageToggle language={language} onLanguageChange={onLanguageChange} />
-            <LogoutButton />
-          </div>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 text-white dark:bg-gradient-to-br dark:from-gray-900 dark:to-purple-900">
+      {/* Header with controls */}
+      <div className="absolute top-4 right-4 flex items-center space-x-2">
+        <LanguageToggle language={language} onLanguageChange={onLanguageChange} />
+        <ThemeToggle />
+        <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
+      </div>
 
-        {/* Progress Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.level}</h3>
-            <p className="text-2xl">{gameProgress.level}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.totalCorrect}</h3>
-            <p className="text-2xl">{gameProgress.total_correct}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.totalAttempts}</h3>
-            <p className="text-2xl">{gameProgress.total_attempts}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.completedLevels}</h3>
-            <p className="text-2xl">{gameProgress.completed_levels}</p>
-          </div>
-           <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.bestScore}</h3>
-            <p className="text-2xl">{gameProgress.best_score}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.currentStreak}</h3>
-            <p className="text-2xl">{gameProgress.current_streak}</p>
-          </div>
-          <div className="bg-white/10 rounded-xl p-4">
-            <h3 className="text-lg font-semibold">{t.bestStreak}</h3>
-            <p className="text-2xl">{gameProgress.best_streak}</p>
-          </div>
+      {/* Robot Mascot */}
+      <div className="mb-8 animate-bounce">
+        <div className="relative w-32 h-32 sm:w-40 sm:h-40 mx-auto mb-4">
+          <Bot className="w-full h-full text-cyan-400 dark:text-cyan-300 drop-shadow-lg" />
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full animate-pulse"></div>
         </div>
-
-        {/* Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Button onClick={() => onStartLevel(gameProgress.level)} className="bg-green-500 hover:bg-green-600">
-            <Play className="w-5 h-5 mr-2" />
-            {t.startGame}
-          </Button>
-          <Button onClick={onOpenProfile} className="bg-blue-500 hover:bg-blue-600">
-            <UserIcon className="w-5 h-5 mr-2" />
-            {t.openProfile}
-          </Button>
-          <Button onClick={onStartEcoSort} className="bg-orange-500 hover:bg-orange-600">
-            <Globe className="w-5 h-5 mr-2" />
-            {t.ecoSort}
-          </Button>
-          <Button onClick={onStartRealtimeSorting} className="bg-purple-500 hover:bg-purple-600">
-            <Camera className="w-5 h-5 mr-2" />
-            {t.realtimeSorting}
-          </Button>
-          <Button onClick={onViewBackendArchitecture} className="bg-gray-700 hover:bg-gray-800">
-            <BarChart3 className="w-5 h-5 mr-2" />
-            {t.backendArchitecture}
-          </Button>
+        <div className="bg-white/10 dark:bg-purple-900/30 rounded-2xl p-4 backdrop-blur-sm">
+          <p className="text-sm sm:text-base text-cyan-200 dark:text-cyan-300 text-center font-medium">
+            {t.robotGreeting}
+          </p>
         </div>
       </div>
+
+      {/* App title */}
+      <div className="text-center mb-12">
+        <h1 className="text-4xl sm:text-6xl md:text-7xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text text-transparent dark:neon-text">
+          {t.title}
+        </h1>
+        <p className="text-lg sm:text-xl md:text-2xl text-blue-100 dark:text-cyan-200 mb-6">
+          {t.subtitle}
+        </p>
+        <p className="text-base sm:text-lg text-blue-200 dark:text-cyan-300 font-medium">
+          {t.welcomeMessage}
+        </p>
+      </div>
+
+      {/* Feature Selection */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 w-full max-w-4xl mb-8">
+        {/* EcoSort Game */}
+        <div className="bg-white/10 dark:bg-purple-900/20 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/20 dark:neon-border hover:bg-white/15 dark:hover:bg-purple-800/30 transition-all duration-300 hover:scale-105 dark:hover:neon-glow">
+          <div className="text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center">
+              <Gamepad2 className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold mb-3 text-white dark:text-cyan-300">
+              {t.ecosortGame}
+            </h3>
+            <p className="text-sm sm:text-base text-blue-100 dark:text-cyan-200 mb-6 leading-relaxed">
+              {t.ecosortDescription}
+            </p>
+            <Button
+              onClick={onStartEcoSort}
+              className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 dark:from-green-600 dark:to-blue-700 dark:hover:from-green-700 dark:hover:to-blue-800"
+            >
+              Start Game
+            </Button>
+          </div>
+        </div>
+
+        {/* Real-time Sorting */}
+        <div className="bg-white/10 dark:bg-purple-900/20 backdrop-blur-sm rounded-3xl p-6 sm:p-8 border border-white/20 dark:neon-border hover:bg-white/15 dark:hover:bg-purple-800/30 transition-all duration-300 hover:scale-105 dark:hover:neon-glow">
+          <div className="text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <Zap className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold mb-3 text-white dark:text-cyan-300">
+              {t.realtimeSorting}
+            </h3>
+            <p className="text-sm sm:text-base text-blue-100 dark:text-cyan-200 mb-6 leading-relaxed">
+              {t.realtimeDescription}
+            </p>
+            <Button
+              onClick={onStartRealtimeSorting}
+              className="w-full py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 dark:from-purple-600 dark:to-pink-700 dark:hover:from-purple-700 dark:hover:to-pink-800"
+            >
+              Start AI Assistant
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Profile Button */}
+      <Button
+        onClick={onOpenProfile}
+        className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 dark:from-indigo-600 dark:to-purple-600 dark:hover:from-indigo-700 dark:hover:to-purple-700 dark:neon-glow"
+      >
+        <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+        {t.profile}
+      </Button>
     </div>
   );
 };

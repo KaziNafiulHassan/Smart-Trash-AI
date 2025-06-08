@@ -51,9 +51,9 @@ serve(async (req) => {
     // Clean the token by removing whitespace, carriage returns, and newlines
     const cleanToken = rawToken.trim().replace(/[\r\n\t]/g, '');
     console.log('Token cleaned, length:', cleanToken.length);
+    console.log('Token starts with:', cleanToken.substring(0, 8) + '...');
 
-    // Use a more reliable model that's always available
-    const modelName = 'microsoft/resnet-50';
+    const modelName = 'Nafi007/EfficientNetB0';
     console.log('Using model:', modelName);
 
     const hfResponse = await fetch(
@@ -69,27 +69,27 @@ serve(async (req) => {
     );
 
     console.log('HF Response status:', hfResponse.status);
+    console.log('HF Response headers:', Object.fromEntries(hfResponse.headers.entries()));
 
     if (!hfResponse.ok) {
       const errorText = await hfResponse.text();
       console.error('Hugging Face API error:', hfResponse.status, errorText);
       
-      // If the model is loading, return a user-friendly message
+      // If the model is loading, return a temporary response
       if (hfResponse.status === 503) {
         return new Response(
-          JSON.stringify({ 
-            error: 'AI model is currently loading. Please try again in a few seconds.',
-            userFriendly: true
-          }),
+          JSON.stringify({ error: 'AI model is loading, please try again in a moment' }),
           { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
       return new Response(
         JSON.stringify({ 
-          error: 'Classification service temporarily unavailable', 
+          error: 'Classification service unavailable', 
           details: `${hfResponse.status}: ${errorText}`,
-          userFriendly: true
+          model: modelName,
+          tokenProvided: !!cleanToken,
+          tokenLength: cleanToken?.length || 0
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -100,7 +100,7 @@ serve(async (req) => {
 
     if (!Array.isArray(predictions) || predictions.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'No classification results', userFriendly: true }),
+        JSON.stringify({ error: 'No classification results' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -126,38 +126,16 @@ serve(async (req) => {
     } else if (categoryData && categoryData.length > 0) {
       console.log('Available categories:', categoryData.map(c => ({ name_en: c.name_en, name_de: c.name_de })));
       
-      // Enhanced matching logic for waste classification
+      // Try to find exact match first
       matchedCategory = categoryData.find(category => {
         const categoryNameEn = category.name_en?.toLowerCase() || '';
         const categoryNameDe = category.name_de?.toLowerCase() || '';
         const predicted = predictedCategory.toLowerCase();
         
-        // Direct matches
-        if (categoryNameEn.includes(predicted) || predicted.includes(categoryNameEn) ||
-            categoryNameDe.includes(predicted) || predicted.includes(categoryNameDe)) {
-          return true;
-        }
-        
-        // Waste-specific keyword mapping
-        const wasteKeywords = {
-          'bottle': ['plastic', 'glass'],
-          'can': ['metal', 'aluminum'],
-          'paper': ['cardboard', 'newspaper'],
-          'food': ['bio', 'organic'],
-          'apple': ['bio', 'organic'],
-          'banana': ['bio', 'organic'],
-          'plastic': ['plastic'],
-          'glass': ['glass'],
-          'metal': ['metal']
-        };
-        
-        for (const [keyword, categories] of Object.entries(wasteKeywords)) {
-          if (predicted.includes(keyword)) {
-            return categories.some(cat => categoryNameEn.includes(cat) || categoryNameDe.includes(cat));
-          }
-        }
-        
-        return false;
+        return categoryNameEn.includes(predicted) || 
+               predicted.includes(categoryNameEn) ||
+               categoryNameDe.includes(predicted) || 
+               predicted.includes(categoryNameDe);
       });
 
       if (matchedCategory) {
@@ -166,16 +144,6 @@ serve(async (req) => {
         console.log('Matched category:', matchedCategory);
       } else {
         console.log('No matching category found for:', predictedCategory);
-        // Smart fallback based on common waste types
-        if (predictedCategory.toLowerCase().includes('food') || 
-            predictedCategory.toLowerCase().includes('apple') ||
-            predictedCategory.toLowerCase().includes('banana')) {
-          binType = 'bio';
-        } else if (predictedCategory.toLowerCase().includes('bottle')) {
-          binType = 'plastic';
-        } else if (predictedCategory.toLowerCase().includes('paper')) {
-          binType = 'paper';
-        }
       }
     }
 
@@ -264,11 +232,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in classify-waste-image function:', error);
     return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error', 
-        details: error.message,
-        userFriendly: true
-      }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
