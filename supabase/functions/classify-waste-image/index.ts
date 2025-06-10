@@ -116,19 +116,22 @@ serve(async (req) => {
 
     console.log('Predicted category:', predictedCategory, 'with confidence:', confidence);
 
-    // Map your model's predictions to waste categories
-    // You'll need to update this mapping based on your model's output classes
+    // Map your model's predictions to waste categories based on your training classes
     const wasteMapping = {
-      // Add mappings based on your training labels
-      // Example mappings - update these to match your model's actual class names
-      'plastic_bottle': { bin: 'plastic', category: 'plastic bottle' },
-      'glass_bottle': { bin: 'glass', category: 'glass bottle' },
-      'paper': { bin: 'paper', category: 'paper item' },
-      'cardboard': { bin: 'paper', category: 'cardboard' },
-      'metal_can': { bin: 'residual', category: 'metal can' },
-      'organic_waste': { bin: 'bio', category: 'organic waste' },
-      'general_waste': { bin: 'residual', category: 'general waste' },
-      // Add more mappings based on your training data
+      'Bulky Waste': { bin: 'bulky', category: 'bulky waste' },
+      'Cardboard': { bin: 'paper', category: 'cardboard' },
+      'Composite Packaging': { bin: 'residual', category: 'composite packaging' },
+      'Food Waste': { bin: 'bio', category: 'food waste' },
+      'Hazardous Waste': { bin: 'hazardous', category: 'hazardous waste' },
+      'Metal Packaging': { bin: 'residual', category: 'metal packaging' },
+      'Paper': { bin: 'paper', category: 'paper' },
+      'Paper Packaging': { bin: 'paper', category: 'paper packaging' },
+      'Plastic': { bin: 'plastic', category: 'plastic' },
+      'Recyclable Glass': { bin: 'glass', category: 'recyclable glass' },
+      'Residual Waste': { bin: 'residual', category: 'residual waste' },
+      'Textile': { bin: 'residual', category: 'textile' },
+      'Vegetation': { bin: 'bio', category: 'vegetation' },
+      'Waste Glass': { bin: 'glass', category: 'waste glass' }
     };
 
     // Find best match for waste category
@@ -140,16 +143,8 @@ serve(async (req) => {
       binType = wasteMapping[predictedCategory].bin;
       mappedCategory = wasteMapping[predictedCategory].category;
     } else {
-      // Fallback: try partial matching
-      const lowerPredicted = predictedCategory.toLowerCase();
-      for (const [key, value] of Object.entries(wasteMapping)) {
-        if (lowerPredicted.includes(key.toLowerCase().replace('_', ' ')) || 
-            key.toLowerCase().replace('_', ' ').includes(lowerPredicted)) {
-          binType = value.bin;
-          mappedCategory = value.category;
-          break;
-        }
-      }
+      // Fallback for any unmapped categories
+      console.log('Unmapped category:', predictedCategory);
     }
 
     // Query the categories table to get proper rules
