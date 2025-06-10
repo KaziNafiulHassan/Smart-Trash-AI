@@ -1,10 +1,10 @@
+
 import React from 'react';
 import { User, Bot, Gamepad2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
-import LogoutButton from './LogoutButton';
-import ThemeToggle from '@/components/ui/ThemeToggle';
 import LanguageToggle from '@/components/ui/LanguageToggle';
+import SettingsDropdown from './SettingsDropdown';
 
 interface GameHomeProps {
   language: Language;
@@ -67,8 +67,7 @@ const GameHome: React.FC<GameHomeProps> = ({
       {/* Header with controls */}
       <div className="absolute top-4 right-4 flex items-center space-x-2">
         <LanguageToggle language={language} onLanguageChange={onLanguageChange} />
-        <ThemeToggle />
-        <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
+        <SettingsDropdown language={language} onOpenProfile={onOpenProfile} />
       </div>
 
       {/* Robot Mascot */}
@@ -141,15 +140,6 @@ const GameHome: React.FC<GameHomeProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Profile Button */}
-      <Button
-        onClick={onOpenProfile}
-        className="px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105 dark:from-indigo-600 dark:to-purple-600 dark:hover:from-indigo-700 dark:hover:to-purple-700 dark:neon-glow"
-      >
-        <User className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-        {t.profile}
-      </Button>
     </div>
   );
 };

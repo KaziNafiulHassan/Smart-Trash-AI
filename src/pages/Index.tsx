@@ -155,7 +155,6 @@ const Index = () => {
             onLanguageChange={handleLanguageChange}
             onStartEcoSort={handleStartEcoSort}
             onStartRealtimeSorting={handleStartRealtimeSorting}
-            onViewBackendArchitecture={handleViewBackendArchitecture}
           />
         );
       case 'gameLevel':
