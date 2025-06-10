@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import * as ort from "onnxruntime-web";
 import { preprocessImage } from "../utils/onnxPreprocess";
@@ -13,6 +12,13 @@ export function useOnnxClassifier(modelUrl: string, classMapping: string[]) {
     async function loadModel() {
       try {
         console.log('Loading ONNX model from:', modelUrl);
+        
+        // First check if the URL is accessible
+        const response = await fetch(modelUrl, { method: 'HEAD' });
+        if (!response.ok) {
+          throw new Error(`Model not found: ${response.status} ${response.statusText}`);
+        }
+        
         // Choose backend: 'wasm' or 'webgl' if available. By default, ORT picks best.
         const sess = await ort.InferenceSession.create(modelUrl, {
           executionProviders: ["wasm"], // or ["webgl", "wasm"] for GPU if supported

@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from "react";
 import { Camera, Upload, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useOnnxClassifier } from "@/hooks/useOnnxClassifier";
 import { classMapping } from "@/data/classMapping";
 
-// Use the correct EfficientNet model URL from Supabase storage
+// Use the correct EfficientNet model URL from Supabase storage (fixed double slash)
 const MODEL_URL = "https://dwgolyqevdaqosteonfl.supabase.co/storage/v1/object/public/models/efficientnet_b0_waste.onnx";
 
 const AIWasteSorter: React.FC = () => {
