@@ -116,48 +116,63 @@ serve(async (req) => {
 
     console.log('Predicted category:', predictedCategory, 'with confidence:', confidence);
 
-    // Map your model's predictions to waste categories based on your training classes
-    const wasteMapping = {
-      'Bulky Waste': { bin: 'bulky', category: 'bulky waste' },
-      'Cardboard': { bin: 'paper', category: 'cardboard' },
-      'Composite Packaging': { bin: 'residual', category: 'composite packaging' },
-      'Food Waste': { bin: 'bio', category: 'food waste' },
-      'Hazardous Waste': { bin: 'hazardous', category: 'hazardous waste' },
-      'Metal Packaging': { bin: 'residual', category: 'metal packaging' },
-      'Paper': { bin: 'paper', category: 'paper' },
-      'Paper Packaging': { bin: 'paper', category: 'paper packaging' },
-      'Plastic': { bin: 'plastic', category: 'plastic' },
-      'Recyclable Glass': { bin: 'glass', category: 'recyclable glass' },
-      'Residual Waste': { bin: 'residual', category: 'residual waste' },
-      'Textile': { bin: 'residual', category: 'textile' },
-      'Vegetation': { bin: 'bio', category: 'vegetation' },
-      'Waste Glass': { bin: 'glass', category: 'waste glass' }
-    };
-
-    // Find best match for waste category
-    let binType = 'residual'; // default fallback
-    let mappedCategory = predictedCategory; // Use the model's prediction as default
-    
-    // Direct mapping if available
-    if (wasteMapping[predictedCategory]) {
-      binType = wasteMapping[predictedCategory].bin;
-      mappedCategory = wasteMapping[predictedCategory].category;
-    } else {
-      // Fallback for any unmapped categories
-      console.log('Unmapped category:', predictedCategory);
-    }
-
-    // Query the categories table to get proper rules
-    const { data: categoryData, error: categoryError } = await supabaseClient
+    // Query the categories table using the predicted category name
+    // Try to match by name_en first, then name_de if language is DE
+    let categoryQuery = supabaseClient
       .from('categories')
-      .select('*')
-      .eq('bin_type', binType)
-      .limit(1);
+      .select('*');
 
-    let rule = '';
-    if (!categoryError && categoryData && categoryData.length > 0) {
-      rule = language === 'DE' ? categoryData[0].rule_de : categoryData[0].rule_en;
+    if (language === 'DE') {
+      categoryQuery = categoryQuery.eq('name_de', predictedCategory);
+    } else {
+      categoryQuery = categoryQuery.eq('name_en', predictedCategory);
     }
+
+    let { data: categoryData, error: categoryError } = await categoryQuery.maybeSingle();
+
+    // If no match found, try the other language as fallback
+    if (!categoryData && !categoryError) {
+      console.log('No category found for primary language, trying fallback...');
+      const fallbackQuery = supabaseClient
+        .from('categories')
+        .select('*');
+
+      if (language === 'DE') {
+        fallbackQuery.eq('name_en', predictedCategory);
+      } else {
+        fallbackQuery.eq('name_de', predictedCategory);
+      }
+
+      const fallbackResult = await fallbackQuery.maybeSingle();
+      categoryData = fallbackResult.data;
+      categoryError = fallbackResult.error;
+    }
+
+    if (categoryError) {
+      console.error('Error fetching category:', categoryError);
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch category information' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (!categoryData) {
+      console.log('Category not found in database:', predictedCategory);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Category not found in database',
+          predictedCategory: predictedCategory,
+          suggestion: 'Please check if the category exists in the categories table'
+        }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Found category:', categoryData);
+
+    const binType = categoryData.bin_type;
+    const rule = language === 'DE' ? categoryData.rule_de : categoryData.rule_en;
+    const categoryName = language === 'DE' ? categoryData.name_de : categoryData.name_en;
 
     // Store image in Supabase Storage
     const fileName = `${userId}_${Date.now()}.jpg`;
@@ -184,7 +199,7 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         image_url: imageUrl,
-        predicted_category: mappedCategory,
+        predicted_category: categoryName,
         predicted_bin: binType,
         confidence: confidence,
         user_feedback_correct: null,
@@ -195,10 +210,10 @@ serve(async (req) => {
       console.error('Database error:', dbError);
     }
 
-    // Generate feedback
+    // Generate feedback using the rule from the database
     let feedback = rule;
     if (!feedback) {
-      // Fallback feedback
+      // Fallback feedback if no rule is defined
       const fallbackTexts = {
         EN: {
           paper: "This item belongs to paper waste. Please dispose of it in the paper bin.",
@@ -223,7 +238,7 @@ serve(async (req) => {
     }
 
     const result = {
-      predictedCategory: mappedCategory,
+      predictedCategory: categoryName,
       predictedBin: binType,
       confidence: Math.round(confidence * 100),
       feedback,
@@ -231,7 +246,8 @@ serve(async (req) => {
       imageUrl,
       timestamp: new Date().toISOString(),
       modelUsed: modelName,
-      originalPrediction: predictedCategory
+      originalPrediction: predictedCategory,
+      categoryId: categoryData.id
     };
 
     console.log('Classification result:', result);
