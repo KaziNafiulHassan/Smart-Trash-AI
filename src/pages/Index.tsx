@@ -5,7 +5,6 @@ import { OnboardingScreen } from '@/features/auth';
 import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
-import RealtimeSortingScreen from '@/components/RealtimeSorting/RealtimeSortingScreen';
 import BackendArchitecture from '@/pages/BackendArchitecture';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
@@ -83,10 +82,6 @@ const Index = () => {
     setCurrentScreen('gameLevel'); // Go directly to game level
   };
 
-  const handleStartRealtimeSorting = () => {
-    setCurrentScreen('realtimeSorting');
-  };
-
   const handleStartLevel = (level: number) => {
     setCurrentScreen('gameLevel');
   };
@@ -154,7 +149,6 @@ const Index = () => {
             onOpenProfile={handleViewProfile}
             onLanguageChange={handleLanguageChange}
             onStartEcoSort={handleStartEcoSort}
-            onStartRealtimeSorting={handleStartRealtimeSorting}
           />
         );
       case 'gameLevel':
@@ -176,14 +170,6 @@ const Index = () => {
             onLanguageChange={handleLanguageChange}
           />
         );
-      case 'realtimeSorting':
-        return (
-          <RealtimeSortingScreen
-            language={language}
-            user={user}
-            onBackToHome={handleBackToHome}
-          />
-        );
       case 'backendArchitecture':
         return (
           <BackendArchitecture
@@ -203,3 +189,5 @@ const Index = () => {
 };
 
 export default Index;
+
+</edits_to_apply>
