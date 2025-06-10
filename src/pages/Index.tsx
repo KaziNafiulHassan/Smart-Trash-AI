@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthScreen from '@/components/Auth/AuthScreen';
@@ -6,11 +7,12 @@ import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
 import BackendArchitecture from '@/pages/BackendArchitecture';
+import AIWasteSorter from '@/components/AIWasteSorter';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
 import { Language, Screen } from '@/types/common';
 
-type ExtendedScreen = Screen | 'backendArchitecture';
+type ExtendedScreen = Screen | 'backendArchitecture' | 'aiSorting';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -82,6 +84,10 @@ const Index = () => {
     setCurrentScreen('gameLevel'); // Go directly to game level
   };
 
+  const handleStartAISorting = () => {
+    setCurrentScreen('aiSorting');
+  };
+
   const handleStartLevel = (level: number) => {
     setCurrentScreen('gameLevel');
   };
@@ -149,6 +155,7 @@ const Index = () => {
             onOpenProfile={handleViewProfile}
             onLanguageChange={handleLanguageChange}
             onStartEcoSort={handleStartEcoSort}
+            onStartAISorting={handleStartAISorting}
           />
         );
       case 'gameLevel':
@@ -169,6 +176,22 @@ const Index = () => {
             onBackToHome={handleBackToHome}
             onLanguageChange={handleLanguageChange}
           />
+        );
+      case 'aiSorting':
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-green-400 via-blue-500 to-purple-600 flex flex-col">
+            <div className="p-4">
+              <button
+                onClick={handleBackToHome}
+                className="text-white hover:text-gray-200 transition-colors"
+              >
+                ← Back to Home
+              </button>
+            </div>
+            <div className="flex-1 flex items-center justify-center">
+              <AIWasteSorter />
+            </div>
+          </div>
         );
       case 'backendArchitecture':
         return (
