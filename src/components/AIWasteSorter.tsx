@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { useOnnxClassifier } from "@/hooks/useOnnxClassifier";
 import { classMapping } from "@/data/classMapping";
 
-// Use the actual Supabase URL directly
-const MODEL_URL = "https://dwgolyqevdaqosteonfl.supabase.co/storage/v1/object/public/models/waste_classifier.onnx";
+// Use the correct EfficientNet model URL from Supabase storage
+const MODEL_URL = "https://dwgolyqevdaqosteonfl.supabase.co/storage/v1/object/public/models/efficientnet_b0_waste.onnx";
 
 const AIWasteSorter: React.FC = () => {
   const { session, loading, error, classify } = useOnnxClassifier(MODEL_URL, classMapping);
@@ -100,7 +100,7 @@ const AIWasteSorter: React.FC = () => {
         {loading && (
           <div className="flex items-center text-blue-600">
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            Loading AI model...
+            Loading EfficientNet AI model...
           </div>
         )}
         {error && (
@@ -112,7 +112,7 @@ const AIWasteSorter: React.FC = () => {
         {session && !loading && (
           <div className="flex items-center text-green-600">
             <CheckCircle className="h-4 w-4 mr-2" />
-            AI model ready
+            EfficientNet AI model ready
           </div>
         )}
       </div>
