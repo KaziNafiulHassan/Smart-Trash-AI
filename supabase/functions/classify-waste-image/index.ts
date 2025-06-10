@@ -33,15 +33,13 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Get the Hugging Face token - try different possible environment variable names
+    // Get the Hugging Face token
     const hfToken = Deno.env.get('HUGGING_FACE_TOKEN') || 
                     Deno.env.get('HUGGINGFACE_TOKEN') || 
                     Deno.env.get('HF_TOKEN');
     
     console.log('Environment variables check:');
     console.log('HUGGING_FACE_TOKEN exists:', !!Deno.env.get('HUGGING_FACE_TOKEN'));
-    console.log('HUGGINGFACE_TOKEN exists:', !!Deno.env.get('HUGGINGFACE_TOKEN'));
-    console.log('HF_TOKEN exists:', !!Deno.env.get('HF_TOKEN'));
     console.log('Token found:', !!hfToken);
     
     if (!hfToken) {
@@ -55,12 +53,12 @@ serve(async (req) => {
       );
     }
 
-    // Clean the token by removing whitespace, carriage returns, and newlines
+    // Clean the token
     const cleanToken = hfToken.trim().replace(/[\r\n\t]/g, '');
     console.log('Token cleaned, length:', cleanToken.length);
-    console.log('Token starts with:', cleanToken.substring(0, 8) + '...');
 
-    const modelName = 'Nafi007/EfficientNetB0';
+    // Use a reliable, publicly available image classification model
+    const modelName = 'google/vit-base-patch16-224';
     console.log('Using model:', modelName);
 
     const hfResponse = await fetch(
@@ -76,7 +74,6 @@ serve(async (req) => {
     );
 
     console.log('HF Response status:', hfResponse.status);
-    console.log('HF Response headers:', Object.fromEntries(hfResponse.headers.entries()));
 
     if (!hfResponse.ok) {
       const errorText = await hfResponse.text();
@@ -119,39 +116,50 @@ serve(async (req) => {
 
     console.log('Predicted category:', predictedCategory, 'with confidence:', confidence);
 
-    // Query the categories table to find matching category and get bin type and rule
+    // Map general image classifications to waste categories
+    const wasteMapping = {
+      // Common waste items
+      'bottle': { bin: 'plastic', category: 'plastic bottle' },
+      'plastic': { bin: 'plastic', category: 'plastic item' },
+      'glass': { bin: 'glass', category: 'glass item' },
+      'paper': { bin: 'paper', category: 'paper item' },
+      'cardboard': { bin: 'paper', category: 'cardboard' },
+      'metal': { bin: 'residual', category: 'metal item' },
+      'can': { bin: 'residual', category: 'metal can' },
+      'food': { bin: 'bio', category: 'food waste' },
+      'organic': { bin: 'bio', category: 'organic waste' },
+      'fruit': { bin: 'bio', category: 'fruit waste' },
+      'vegetable': { bin: 'bio', category: 'vegetable waste' },
+      'newspaper': { bin: 'paper', category: 'newspaper' },
+      'magazine': { bin: 'paper', category: 'magazine' },
+      'book': { bin: 'paper', category: 'book' },
+      'bag': { bin: 'plastic', category: 'plastic bag' },
+      'container': { bin: 'plastic', category: 'plastic container' },
+    };
+
+    // Find best match for waste category
+    let binType = 'residual'; // default fallback
+    let mappedCategory = 'general waste';
+    
+    const lowerPredicted = predictedCategory.toLowerCase();
+    for (const [key, value] of Object.entries(wasteMapping)) {
+      if (lowerPredicted.includes(key)) {
+        binType = value.bin;
+        mappedCategory = value.category;
+        break;
+      }
+    }
+
+    // Query the categories table to get proper rules
     const { data: categoryData, error: categoryError } = await supabaseClient
       .from('categories')
-      .select('*');
+      .select('*')
+      .eq('bin_type', binType)
+      .limit(1);
 
-    let matchedCategory = null;
-    let binType = 'residual'; // default fallback
     let rule = '';
-
-    if (categoryError) {
-      console.error('Category lookup error:', categoryError);
-    } else if (categoryData && categoryData.length > 0) {
-      console.log('Available categories:', categoryData.map(c => ({ name_en: c.name_en, name_de: c.name_de })));
-      
-      // Try to find exact match first
-      matchedCategory = categoryData.find(category => {
-        const categoryNameEn = category.name_en?.toLowerCase() || '';
-        const categoryNameDe = category.name_de?.toLowerCase() || '';
-        const predicted = predictedCategory.toLowerCase();
-        
-        return categoryNameEn.includes(predicted) || 
-               predicted.includes(categoryNameEn) ||
-               categoryNameDe.includes(predicted) || 
-               predicted.includes(categoryNameDe);
-      });
-
-      if (matchedCategory) {
-        binType = matchedCategory.bin_type;
-        rule = language === 'DE' ? matchedCategory.rule_de : matchedCategory.rule_en;
-        console.log('Matched category:', matchedCategory);
-      } else {
-        console.log('No matching category found for:', predictedCategory);
-      }
+    if (!categoryError && categoryData && categoryData.length > 0) {
+      rule = language === 'DE' ? categoryData[0].rule_de : categoryData[0].rule_en;
     }
 
     // Store image in Supabase Storage
@@ -179,7 +187,7 @@ serve(async (req) => {
       .insert({
         user_id: userId,
         image_url: imageUrl,
-        predicted_category: predictedCategory,
+        predicted_category: mappedCategory,
         predicted_bin: binType,
         confidence: confidence,
         user_feedback_correct: null,
@@ -190,10 +198,10 @@ serve(async (req) => {
       console.error('Database error:', dbError);
     }
 
-    // Generate feedback based on the rule from categories table
+    // Generate feedback
     let feedback = rule;
     if (!feedback) {
-      // Fallback feedback if no rule found
+      // Fallback feedback
       const fallbackTexts = {
         EN: {
           paper: "This item belongs to paper waste. Please dispose of it in the paper bin.",
@@ -218,15 +226,15 @@ serve(async (req) => {
     }
 
     const result = {
-      predictedCategory,
+      predictedCategory: mappedCategory,
       predictedBin: binType,
       confidence: Math.round(confidence * 100),
       feedback,
       rule,
-      categoryDetails: matchedCategory,
       imageUrl,
       timestamp: new Date().toISOString(),
-      modelUsed: modelName
+      modelUsed: modelName,
+      originalPrediction: predictedCategory
     };
 
     console.log('Classification result:', result);
