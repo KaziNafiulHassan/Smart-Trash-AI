@@ -33,23 +33,30 @@ serve(async (req) => {
     // Convert base64 to blob for Hugging Face API
     const imageData = Uint8Array.from(atob(imageBase64.split(',')[1]), c => c.charCodeAt(0));
 
-    // Get and clean the Hugging Face token
-    const rawToken = Deno.env.get('HUGGING_FACE_TOKEN');
-    console.log('Raw token found:', !!rawToken);
+    // Get the Hugging Face token - try different possible environment variable names
+    const hfToken = Deno.env.get('HUGGING_FACE_TOKEN') || 
+                    Deno.env.get('HUGGINGFACE_TOKEN') || 
+                    Deno.env.get('HF_TOKEN');
     
-    if (!rawToken) {
-      console.error('HUGGING_FACE_TOKEN not found in environment variables');
+    console.log('Environment variables check:');
+    console.log('HUGGING_FACE_TOKEN exists:', !!Deno.env.get('HUGGING_FACE_TOKEN'));
+    console.log('HUGGINGFACE_TOKEN exists:', !!Deno.env.get('HUGGINGFACE_TOKEN'));
+    console.log('HF_TOKEN exists:', !!Deno.env.get('HF_TOKEN'));
+    console.log('Token found:', !!hfToken);
+    
+    if (!hfToken) {
+      console.error('No Hugging Face token found in environment variables');
       return new Response(
         JSON.stringify({ 
           error: 'Hugging Face token not configured', 
-          debug: 'HUGGING_FACE_TOKEN environment variable is missing'
+          debug: 'HUGGING_FACE_TOKEN environment variable is missing from Edge Function secrets'
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Clean the token by removing whitespace, carriage returns, and newlines
-    const cleanToken = rawToken.trim().replace(/[\r\n\t]/g, '');
+    const cleanToken = hfToken.trim().replace(/[\r\n\t]/g, '');
     console.log('Token cleaned, length:', cleanToken.length);
     console.log('Token starts with:', cleanToken.substring(0, 8) + '...');
 

@@ -1,10 +1,10 @@
-
 import React from 'react';
 import { User, Bot, Gamepad2, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
 import LanguageToggle from '@/components/ui/LanguageToggle';
 import SettingsDropdown from './SettingsDropdown';
+import TestingSortingComponent from '@/components/RealtimeSorting/TestingSortingComponent';
 
 interface GameHomeProps {
   language: Language;
@@ -140,6 +140,11 @@ const GameHome: React.FC<GameHomeProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Testing Component - Only show in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <TestingSortingComponent />
+      )}
     </div>
   );
 };
