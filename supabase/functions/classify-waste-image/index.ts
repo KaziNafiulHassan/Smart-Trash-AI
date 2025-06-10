@@ -57,9 +57,9 @@ serve(async (req) => {
     const cleanToken = hfToken.trim().replace(/[\r\n\t]/g, '');
     console.log('Token cleaned, length:', cleanToken.length);
 
-    // Use a reliable, publicly available image classification model
-    const modelName = 'google/vit-base-patch16-224';
-    console.log('Using model:', modelName);
+    // Use your custom fine-tuned model
+    const modelName = 'Nafi007/EfficientNetB0';
+    console.log('Using custom model:', modelName);
 
     const hfResponse = await fetch(
       `https://api-inference.huggingface.co/models/${modelName}`,
@@ -116,37 +116,39 @@ serve(async (req) => {
 
     console.log('Predicted category:', predictedCategory, 'with confidence:', confidence);
 
-    // Map general image classifications to waste categories
+    // Map your model's predictions to waste categories
+    // You'll need to update this mapping based on your model's output classes
     const wasteMapping = {
-      // Common waste items
-      'bottle': { bin: 'plastic', category: 'plastic bottle' },
-      'plastic': { bin: 'plastic', category: 'plastic item' },
-      'glass': { bin: 'glass', category: 'glass item' },
+      // Add mappings based on your training labels
+      // Example mappings - update these to match your model's actual class names
+      'plastic_bottle': { bin: 'plastic', category: 'plastic bottle' },
+      'glass_bottle': { bin: 'glass', category: 'glass bottle' },
       'paper': { bin: 'paper', category: 'paper item' },
       'cardboard': { bin: 'paper', category: 'cardboard' },
-      'metal': { bin: 'residual', category: 'metal item' },
-      'can': { bin: 'residual', category: 'metal can' },
-      'food': { bin: 'bio', category: 'food waste' },
-      'organic': { bin: 'bio', category: 'organic waste' },
-      'fruit': { bin: 'bio', category: 'fruit waste' },
-      'vegetable': { bin: 'bio', category: 'vegetable waste' },
-      'newspaper': { bin: 'paper', category: 'newspaper' },
-      'magazine': { bin: 'paper', category: 'magazine' },
-      'book': { bin: 'paper', category: 'book' },
-      'bag': { bin: 'plastic', category: 'plastic bag' },
-      'container': { bin: 'plastic', category: 'plastic container' },
+      'metal_can': { bin: 'residual', category: 'metal can' },
+      'organic_waste': { bin: 'bio', category: 'organic waste' },
+      'general_waste': { bin: 'residual', category: 'general waste' },
+      // Add more mappings based on your training data
     };
 
     // Find best match for waste category
     let binType = 'residual'; // default fallback
-    let mappedCategory = 'general waste';
+    let mappedCategory = predictedCategory; // Use the model's prediction as default
     
-    const lowerPredicted = predictedCategory.toLowerCase();
-    for (const [key, value] of Object.entries(wasteMapping)) {
-      if (lowerPredicted.includes(key)) {
-        binType = value.bin;
-        mappedCategory = value.category;
-        break;
+    // Direct mapping if available
+    if (wasteMapping[predictedCategory]) {
+      binType = wasteMapping[predictedCategory].bin;
+      mappedCategory = wasteMapping[predictedCategory].category;
+    } else {
+      // Fallback: try partial matching
+      const lowerPredicted = predictedCategory.toLowerCase();
+      for (const [key, value] of Object.entries(wasteMapping)) {
+        if (lowerPredicted.includes(key.toLowerCase().replace('_', ' ')) || 
+            key.toLowerCase().replace('_', ' ').includes(lowerPredicted)) {
+          binType = value.bin;
+          mappedCategory = value.category;
+          break;
+        }
       }
     }
 
