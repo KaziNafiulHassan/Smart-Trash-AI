@@ -1,14 +1,12 @@
-
 import React, { useState, useRef } from "react";
 import { Camera, Upload, Trash2, CheckCircle, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOnnxClassifier } from "@/hooks/useOnnxClassifier";
 import { classMapping } from "@/data/classMapping";
-import { supabase } from "@/integrations/supabase/client";
 
-// You'll need to update this URL to match your actual model in Supabase storage
-const MODEL_URL = `${supabase.supabaseUrl}/storage/v1/object/public/models/waste_classifier.onnx`;
+// Use the actual Supabase URL directly
+const MODEL_URL = "https://dwgolyqevdaqosteonfl.supabase.co/storage/v1/object/public/models/waste_classifier.onnx";
 
 const AIWasteSorter: React.FC = () => {
   const { session, loading, error, classify } = useOnnxClassifier(MODEL_URL, classMapping);
