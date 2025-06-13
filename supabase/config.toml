@@ -3,3 +3,6 @@ project_id = "dwgolyqevdaqosteonfl"
 
 [functions.neo4j-test]
 verify_jwt = false
+
+[functions.neo4j-waste-query]
+verify_jwt = false
