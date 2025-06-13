@@ -6,9 +6,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Neo4j driver for Deno
-import { Driver, Session } from "https://deno.land/x/neo4j_lite_client@4.4.11/mod.ts"
-
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -31,52 +28,114 @@ serve(async (req) => {
     console.log('Neo4j Username:', neo4jUsername);
     console.log('Attempting to connect to Neo4j...');
 
-    // Create Neo4j driver instance
-    const driver = new Driver({
-      hostname: neo4jUri.replace('neo4j+s://', '').replace('neo4j://', ''),
-      port: 7687,
-      username: neo4jUsername,
-      password: neo4jPassword,
-      encrypted: neo4jUri.startsWith('neo4j+s://'), // Use encryption for AuraDB
+    // Parse the Neo4j URI to extract hostname and port
+    const url = new URL(neo4jUri.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://'));
+    const hostname = url.hostname;
+    const port = 7687; // Standard Neo4j port
+    const useEncryption = neo4jUri.startsWith('neo4j+s://');
+
+    console.log('Parsed hostname:', hostname);
+    console.log('Using encryption:', useEncryption);
+
+    // Create basic auth header
+    const auth = btoa(`${neo4jUsername}:${neo4jPassword}`);
+    
+    // For now, let's test the connection using Neo4j HTTP API
+    const httpUri = neo4jUri.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
+    const testUrl = `${httpUri}:7474/db/data/`;
+    
+    console.log('Testing HTTP connection to:', testUrl);
+
+    // Test basic connectivity first
+    const response = await fetch(testUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Basic ${auth}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      }
     });
 
-    // Create a session
-    const session = driver.session();
-    
-    console.log('Session created, running test query...');
+    if (!response.ok) {
+      // Try the newer Neo4j HTTP API endpoint
+      const newApiUrl = `${httpUri}:7474/db/neo4j/tx/commit`;
+      console.log('Trying newer API endpoint:', newApiUrl);
+      
+      const cypherResponse = await fetch(newApiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          statements: [
+            {
+              statement: 'RETURN "Hello from Neo4j AuraDB!" as message, datetime() as timestamp'
+            }
+          ]
+        })
+      });
 
-    // Run a simple test query
-    const result = await session.run('RETURN "Hello from Neo4j AuraDB!" as message, datetime() as timestamp');
-    
-    console.log('Query executed successfully');
+      if (!cypherResponse.ok) {
+        const errorText = await cypherResponse.text();
+        throw new Error(`Neo4j HTTP API error: ${cypherResponse.status} - ${errorText}`);
+      }
 
-    // Extract the result
-    const record = result.records[0];
-    const message = record.get('message');
-    const timestamp = record.get('timestamp');
+      const cypherResult = await cypherResponse.json();
+      console.log('Cypher query executed successfully');
 
-    // Close session and driver
-    await session.close();
-    await driver.close();
+      const data = cypherResult.results[0].data[0];
+      const message = data.row[0];
+      const timestamp = data.row[1];
 
-    console.log('Connection test completed successfully');
+      const successResponse = {
+        success: true,
+        message: 'Neo4j AuraDB connection successful!',
+        data: {
+          testMessage: message,
+          timestamp: timestamp,
+          connectionDetails: {
+            uri: neo4jUri,
+            username: neo4jUsername,
+            encrypted: useEncryption,
+            method: 'HTTP API'
+          }
+        }
+      };
 
-    const response = {
+      return new Response(
+        JSON.stringify(successResponse),
+        { 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json' 
+          } 
+        }
+      );
+    }
+
+    // If basic connection works, try to get server info
+    const serverInfo = await response.json();
+    console.log('Neo4j server info retrieved');
+
+    const basicResponse = {
       success: true,
       message: 'Neo4j AuraDB connection successful!',
       data: {
-        testMessage: message,
-        timestamp: timestamp.toString(),
+        testMessage: 'Basic connection test passed',
+        serverInfo: serverInfo,
         connectionDetails: {
           uri: neo4jUri,
           username: neo4jUsername,
-          encrypted: neo4jUri.startsWith('neo4j+s://')
+          encrypted: useEncryption,
+          method: 'HTTP Basic'
         }
       }
     };
 
     return new Response(
-      JSON.stringify(response),
+      JSON.stringify(basicResponse),
       { 
         headers: { 
           ...corsHeaders, 
@@ -91,7 +150,11 @@ serve(async (req) => {
     const errorResponse = {
       success: false,
       error: error.message,
-      details: 'Failed to connect to Neo4j AuraDB. Please check your credentials and network connectivity.'
+      details: 'Failed to connect to Neo4j AuraDB. Please check your credentials and network connectivity.',
+      debug: {
+        errorType: error.constructor.name,
+        stack: error.stack
+      }
     };
 
     return new Response(
