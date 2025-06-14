@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const dataService = {
   async getGameData(language: 'EN' | 'DE') {
-    // Get waste items with categories
+    // Get waste items with categories - specify the relationship hint
     const { data: wasteItems, error: wasteError } = await supabase
       .from('waste_items')
       .select(`
@@ -12,7 +12,7 @@ export const dataService = {
         item_name_de,
         description_en,
         description_de,
-        categories (
+        categories!fk_waste_items_category_id (
           id,
           name_en,
           name_de,
