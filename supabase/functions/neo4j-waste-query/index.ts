@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -44,14 +45,16 @@ serve(async (req) => {
 
     const auth = btoa(`${neo4jUsername}:${neo4jPassword}`);
     
-    // Robust URL construction
+    // For Neo4j AuraDB, we need to use the REST API endpoint
+    // Convert neo4j+s://xxx to https://xxx and use the correct REST API path
     let baseHttpUri = neo4jUriFromEnv.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
-    // Remove potential trailing slash from baseHttpUri before appending port
     if (baseHttpUri.endsWith('/')) {
       baseHttpUri = baseHttpUri.slice(0, -1);
       console.log('[neo4j-waste-query] Removed trailing slash from baseHttpUri:', baseHttpUri);
     }
-    const apiUrl = `${baseHttpUri}:7474/db/neo4j/tx/commit`;
+    
+    // Use the correct REST API endpoint for AuraDB
+    const apiUrl = `${baseHttpUri}/db/data/transaction/commit`;
     
     console.log('[neo4j-waste-query] Executing Cypher query at API URL:', apiUrl);
 
@@ -78,67 +81,50 @@ serve(async (req) => {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'SupabaseEdgeFunction/1.0' // Added a user agent
+        'User-Agent': 'SupabaseEdgeFunction/1.0'
       },
       body: JSON.stringify(cypherQuery)
     });
 
     const responseText = await response.text();
-    console.log(`[neo4j-waste-query] Neo4j HTTP API response status: ${response.status}`);
+    console.log(`[neo4j-waste-query] Neo4j REST API response status: ${response.status}`);
     if (!response.ok) {
-      console.error(`[neo4j-waste-query] Neo4j HTTP API error response text: ${responseText}`);
-      throw new Error(`Neo4j HTTP API error: ${response.status} - ${responseText}`);
+      console.error(`[neo4j-waste-query] Neo4j REST API error response text: ${responseText}`);
+      
+      // If the REST API fails, try the legacy HTTP API as fallback
+      console.log('[neo4j-waste-query] Trying legacy HTTP API as fallback...');
+      const legacyApiUrl = `${baseHttpUri}:7474/db/neo4j/tx/commit`;
+      console.log('[neo4j-waste-query] Fallback API URL:', legacyApiUrl);
+      
+      const fallbackResponse = await fetch(legacyApiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'User-Agent': 'SupabaseEdgeFunction/1.0'
+        },
+        body: JSON.stringify(cypherQuery)
+      });
+
+      const fallbackResponseText = await fallbackResponse.text();
+      console.log(`[neo4j-waste-query] Fallback response status: ${fallbackResponse.status}`);
+      
+      if (!fallbackResponse.ok) {
+        console.error(`[neo4j-waste-query] Both APIs failed. Fallback response: ${fallbackResponseText}`);
+        throw new Error(`Neo4j API error: ${response.status} - ${responseText}. Fallback also failed: ${fallbackResponse.status} - ${fallbackResponseText}`);
+      }
+      
+      // Use fallback response if successful
+      const fallbackResult = JSON.parse(fallbackResponseText);
+      console.log('[neo4j-waste-query] Fallback API succeeded');
+      return processNeo4jResponse(fallbackResult, wasteCategory);
     }
-    console.log(`[neo4j-waste-query] Neo4j HTTP API response text: ${responseText.substring(0, 500)}...`); // Log snippet
+    
+    console.log(`[neo4j-waste-query] Neo4j REST API response text: ${responseText.substring(0, 500)}...`);
 
     const result = JSON.parse(responseText);
-    // console.log('[neo4j-waste-query] Neo4j query result (parsed):', JSON.stringify(result, null, 2)); // Can be very verbose
-
-    if (result.errors && result.errors.length > 0) {
-      console.error('[neo4j-waste-query] Neo4j query execution error in response body:', JSON.stringify(result.errors));
-      throw new Error(`Neo4j query error: ${result.errors[0].message}`);
-    }
-
-    const queryResults = result.results && result.results[0];
-    
-    if (!queryResults || !queryResults.data || queryResults.data.length === 0) {
-      console.warn('[neo4j-waste-query] No data found in Neo4j for waste category:', wasteCategory);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          message: 'No data found for this waste category in Neo4j.',
-          data: null
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    const dataRow = queryResults.data[0];
-    const wasteNode = dataRow.row[0];
-    const binNode = dataRow.row[1];
-    const centers = dataRow.row[2];
-
-    if (!wasteNode || !binNode) {
-      console.error('[neo4j-waste-query] Expected wasteNode or binNode not found in Neo4j response row:', JSON.stringify(dataRow.row));
-      throw new Error('Malformed data structure from Neo4j: missing waste or bin node.');
-    }
-
-    const enrichedData = {
-      bin_type: binNode.type,
-      bin_color: binNode.color,
-      allowed_in_bin: wasteNode.allowed_in_bin,
-      recyclable: wasteNode.recyclable,
-      rule_en: wasteNode.rule_en,
-      rule_de: wasteNode.rule_de,
-      recycling_centers: centers
-    };
-
-    console.log('[neo4j-waste-query] Successfully enriched data:', JSON.stringify(enrichedData));
-
-    return new Response(
-      JSON.stringify({ success: true, data: enrichedData }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return processNeo4jResponse(result, wasteCategory);
 
   } catch (error) {
     console.error('[neo4j-waste-query] Critical error in function execution:', error.message, error.stack ? error.stack : '(no stacktrace)');
@@ -153,3 +139,53 @@ serve(async (req) => {
     );
   }
 });
+
+function processNeo4jResponse(result: any, wasteCategory: string) {
+  console.log('[neo4j-waste-query] Processing Neo4j response...');
+
+  if (result.errors && result.errors.length > 0) {
+    console.error('[neo4j-waste-query] Neo4j query execution error in response body:', JSON.stringify(result.errors));
+    throw new Error(`Neo4j query error: ${result.errors[0].message}`);
+  }
+
+  const queryResults = result.results && result.results[0];
+  
+  if (!queryResults || !queryResults.data || queryResults.data.length === 0) {
+    console.warn('[neo4j-waste-query] No data found in Neo4j for waste category:', wasteCategory);
+    return new Response(
+      JSON.stringify({
+        success: false,
+        message: 'No data found for this waste category in Neo4j.',
+        data: null
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+
+  const dataRow = queryResults.data[0];
+  const wasteNode = dataRow.row[0];
+  const binNode = dataRow.row[1];
+  const centers = dataRow.row[2];
+
+  if (!wasteNode || !binNode) {
+    console.error('[neo4j-waste-query] Expected wasteNode or binNode not found in Neo4j response row:', JSON.stringify(dataRow.row));
+    throw new Error('Malformed data structure from Neo4j: missing waste or bin node.');
+  }
+
+  const enrichedData = {
+    bin_type: binNode.type,
+    bin_color: binNode.color,
+    allowed_in_bin: wasteNode.allowed_in_bin,
+    recyclable: wasteNode.recyclable,
+    rule_en: wasteNode.rule_en,
+    rule_de: wasteNode.rule_de,
+    recycling_centers: centers
+  };
+
+  console.log('[neo4j-waste-query] Successfully enriched data:', JSON.stringify(enrichedData));
+
+  return new Response(
+    JSON.stringify({ success: true, data: enrichedData }),
+    { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+  );
+}
