@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -32,18 +31,27 @@ serve(async (req) => {
 
     console.log('[neo4j-waste-query] Querying Neo4j for waste category:', wasteCategory);
     
-    const neo4jUri = Deno.env.get('NEO4J_URI');
+    const neo4jUriFromEnv = Deno.env.get('NEO4J_URI');
     const neo4jUsername = Deno.env.get('NEO4J_USERNAME');
     const neo4jPassword = Deno.env.get('NEO4J_PASSWORD');
 
-    if (!neo4jUri || !neo4jUsername || !neo4jPassword) {
+    console.log('[neo4j-waste-query] Raw NEO4J_URI from env:', neo4jUriFromEnv);
+
+    if (!neo4jUriFromEnv || !neo4jUsername || !neo4jPassword) {
       console.error('[neo4j-waste-query] Missing Neo4j credentials in environment variables.');
       throw new Error('Missing Neo4j credentials in environment variables');
     }
 
     const auth = btoa(`${neo4jUsername}:${neo4jPassword}`);
-    const httpUri = neo4jUri.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
-    const apiUrl = `${httpUri}:7474/db/neo4j/tx/commit`;
+    
+    // Robust URL construction
+    let baseHttpUri = neo4jUriFromEnv.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
+    // Remove potential trailing slash from baseHttpUri before appending port
+    if (baseHttpUri.endsWith('/')) {
+      baseHttpUri = baseHttpUri.slice(0, -1);
+      console.log('[neo4j-waste-query] Removed trailing slash from baseHttpUri:', baseHttpUri);
+    }
+    const apiUrl = `${baseHttpUri}:7474/db/neo4j/tx/commit`;
     
     console.log('[neo4j-waste-query] Executing Cypher query at API URL:', apiUrl);
 
@@ -69,7 +77,8 @@ serve(async (req) => {
       headers: {
         'Authorization': `Basic ${auth}`,
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'User-Agent': 'SupabaseEdgeFunction/1.0' // Added a user agent
       },
       body: JSON.stringify(cypherQuery)
     });
@@ -144,4 +153,3 @@ serve(async (req) => {
     );
   }
 });
-
