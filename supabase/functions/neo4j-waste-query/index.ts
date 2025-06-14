@@ -7,41 +7,45 @@ const corsHeaders = {
 }
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log(`[neo4j-waste-query] Function invoked. Method: ${req.method}, URL: ${req.url}`);
+
   if (req.method === 'OPTIONS') {
+    console.log('[neo4j-waste-query] Handling OPTIONS request.');
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    console.log('[neo4j-waste-query] Processing POST request.');
     if (req.method !== 'POST') {
+      console.warn('[neo4j-waste-query] Method not allowed:', req.method);
       throw new Error('Method not allowed');
     }
 
-    const { wasteCategory } = await req.json();
+    const requestBody = await req.json();
+    console.log('[neo4j-waste-query] Request body parsed:', JSON.stringify(requestBody));
+    const { wasteCategory } = requestBody;
     
     if (!wasteCategory) {
+      console.error('[neo4j-waste-query] Waste category name is required in body.');
       throw new Error('Waste category name is required');
     }
 
-    console.log('Querying Neo4j for waste category:', wasteCategory);
+    console.log('[neo4j-waste-query] Querying Neo4j for waste category:', wasteCategory);
     
-    // Get Neo4j credentials from environment
     const neo4jUri = Deno.env.get('NEO4J_URI');
     const neo4jUsername = Deno.env.get('NEO4J_USERNAME');
     const neo4jPassword = Deno.env.get('NEO4J_PASSWORD');
 
     if (!neo4jUri || !neo4jUsername || !neo4jPassword) {
+      console.error('[neo4j-waste-query] Missing Neo4j credentials in environment variables.');
       throw new Error('Missing Neo4j credentials in environment variables');
     }
 
-    // Create basic auth header
     const auth = btoa(`${neo4jUsername}:${neo4jPassword}`);
-    
-    // Use Neo4j HTTP API
     const httpUri = neo4jUri.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
     const apiUrl = `${httpUri}:7474/db/neo4j/tx/commit`;
     
-    console.log('Executing Cypher query for waste category:', wasteCategory);
+    console.log('[neo4j-waste-query] Executing Cypher query at API URL:', apiUrl);
 
     const cypherQuery = {
       statements: [
@@ -58,6 +62,8 @@ serve(async (req) => {
       ]
     };
 
+    console.log('[neo4j-waste-query] Sending Cypher query:', JSON.stringify(cypherQuery, null, 2));
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -68,42 +74,45 @@ serve(async (req) => {
       body: JSON.stringify(cypherQuery)
     });
 
+    const responseText = await response.text();
+    console.log(`[neo4j-waste-query] Neo4j HTTP API response status: ${response.status}`);
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Neo4j HTTP API error: ${response.status} - ${errorText}`);
+      console.error(`[neo4j-waste-query] Neo4j HTTP API error response text: ${responseText}`);
+      throw new Error(`Neo4j HTTP API error: ${response.status} - ${responseText}`);
     }
+    console.log(`[neo4j-waste-query] Neo4j HTTP API response text: ${responseText.substring(0, 500)}...`); // Log snippet
 
-    const result = await response.json();
-    console.log('Neo4j query result:', JSON.stringify(result, null, 2));
+    const result = JSON.parse(responseText);
+    // console.log('[neo4j-waste-query] Neo4j query result (parsed):', JSON.stringify(result, null, 2)); // Can be very verbose
 
-    // Check for errors in the response
     if (result.errors && result.errors.length > 0) {
+      console.error('[neo4j-waste-query] Neo4j query execution error in response body:', JSON.stringify(result.errors));
       throw new Error(`Neo4j query error: ${result.errors[0].message}`);
     }
 
-    // Parse the results
-    const queryResults = result.results[0];
+    const queryResults = result.results && result.results[0];
     
-    if (!queryResults.data || queryResults.data.length === 0) {
+    if (!queryResults || !queryResults.data || queryResults.data.length === 0) {
+      console.warn('[neo4j-waste-query] No data found in Neo4j for waste category:', wasteCategory);
       return new Response(
         JSON.stringify({
           success: false,
-          message: 'No data found for this waste category',
+          message: 'No data found for this waste category in Neo4j.',
           data: null
         }),
-        { 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json' 
-          } 
-        }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const data = queryResults.data[0];
-    const wasteNode = data.row[0];
-    const binNode = data.row[1];
-    const centers = data.row[2];
+    const dataRow = queryResults.data[0];
+    const wasteNode = dataRow.row[0];
+    const binNode = dataRow.row[1];
+    const centers = dataRow.row[2];
+
+    if (!wasteNode || !binNode) {
+      console.error('[neo4j-waste-query] Expected wasteNode or binNode not found in Neo4j response row:', JSON.stringify(dataRow.row));
+      throw new Error('Malformed data structure from Neo4j: missing waste or bin node.');
+    }
 
     const enrichedData = {
       bin_type: binNode.type,
@@ -115,37 +124,24 @@ serve(async (req) => {
       recycling_centers: centers
     };
 
+    console.log('[neo4j-waste-query] Successfully enriched data:', JSON.stringify(enrichedData));
+
     return new Response(
-      JSON.stringify({
-        success: true,
-        data: enrichedData
-      }),
-      { 
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      JSON.stringify({ success: true, data: enrichedData }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Neo4j waste query failed:', error);
+    console.error('[neo4j-waste-query] Critical error in function execution:', error.message, error.stack ? error.stack : '(no stacktrace)');
     
-    const errorResponse = {
-      success: false,
-      error: error.message,
-      details: 'Failed to query Neo4j for waste category information.'
-    };
-
     return new Response(
-      JSON.stringify(errorResponse),
-      { 
-        status: 500,
-        headers: { 
-          ...corsHeaders, 
-          'Content-Type': 'application/json' 
-        } 
-      }
+      JSON.stringify({
+        success: false,
+        error: error.message,
+        details: 'Failed to query Neo4j for waste category information.'
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
+
