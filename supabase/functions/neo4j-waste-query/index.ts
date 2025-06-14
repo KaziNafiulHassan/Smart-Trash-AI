@@ -45,18 +45,24 @@ serve(async (req) => {
 
     const auth = btoa(`${neo4jUsername}:${neo4jPassword}`);
     
-    // For Neo4j AuraDB, we need to use the REST API endpoint
-    // Convert neo4j+s://xxx to https://xxx and use the correct REST API path
-    let baseHttpUri = neo4jUriFromEnv.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
-    if (baseHttpUri.endsWith('/')) {
-      baseHttpUri = baseHttpUri.slice(0, -1);
-      console.log('[neo4j-waste-query] Removed trailing slash from baseHttpUri:', baseHttpUri);
+    // For Neo4j AuraDB, extract the database ID and construct the correct HTTP API URL
+    // Neo4j URI format: neo4j+s://xxxxx.databases.neo4j.io
+    let httpApiUrl;
+    
+    if (neo4jUriFromEnv.includes('.databases.neo4j.io')) {
+      // This is AuraDB - extract the database ID
+      const dbId = neo4jUriFromEnv.replace('neo4j+s://', '').replace('.databases.neo4j.io', '');
+      httpApiUrl = `https://${dbId}.databases.neo4j.io/db/neo4j/tx/commit`;
+      console.log('[neo4j-waste-query] Using AuraDB HTTP API URL:', httpApiUrl);
+    } else {
+      // Fallback for other Neo4j instances
+      let baseHttpUri = neo4jUriFromEnv.replace('neo4j+s://', 'https://').replace('neo4j://', 'http://');
+      if (baseHttpUri.endsWith('/')) {
+        baseHttpUri = baseHttpUri.slice(0, -1);
+      }
+      httpApiUrl = `${baseHttpUri}:7474/db/neo4j/tx/commit`;
+      console.log('[neo4j-waste-query] Using standard Neo4j HTTP API URL:', httpApiUrl);
     }
-    
-    // Use the correct REST API endpoint for AuraDB
-    const apiUrl = `${baseHttpUri}/db/data/transaction/commit`;
-    
-    console.log('[neo4j-waste-query] Executing Cypher query at API URL:', apiUrl);
 
     const cypherQuery = {
       statements: [
@@ -75,7 +81,7 @@ serve(async (req) => {
 
     console.log('[neo4j-waste-query] Sending Cypher query:', JSON.stringify(cypherQuery, null, 2));
 
-    const response = await fetch(apiUrl, {
+    const response = await fetch(httpApiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${auth}`,
@@ -87,41 +93,14 @@ serve(async (req) => {
     });
 
     const responseText = await response.text();
-    console.log(`[neo4j-waste-query] Neo4j REST API response status: ${response.status}`);
+    console.log(`[neo4j-waste-query] Neo4j HTTP API response status: ${response.status}`);
+    
     if (!response.ok) {
-      console.error(`[neo4j-waste-query] Neo4j REST API error response text: ${responseText}`);
-      
-      // If the REST API fails, try the legacy HTTP API as fallback
-      console.log('[neo4j-waste-query] Trying legacy HTTP API as fallback...');
-      const legacyApiUrl = `${baseHttpUri}:7474/db/neo4j/tx/commit`;
-      console.log('[neo4j-waste-query] Fallback API URL:', legacyApiUrl);
-      
-      const fallbackResponse = await fetch(legacyApiUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Basic ${auth}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'User-Agent': 'SupabaseEdgeFunction/1.0'
-        },
-        body: JSON.stringify(cypherQuery)
-      });
-
-      const fallbackResponseText = await fallbackResponse.text();
-      console.log(`[neo4j-waste-query] Fallback response status: ${fallbackResponse.status}`);
-      
-      if (!fallbackResponse.ok) {
-        console.error(`[neo4j-waste-query] Both APIs failed. Fallback response: ${fallbackResponseText}`);
-        throw new Error(`Neo4j API error: ${response.status} - ${responseText}. Fallback also failed: ${fallbackResponse.status} - ${fallbackResponseText}`);
-      }
-      
-      // Use fallback response if successful
-      const fallbackResult = JSON.parse(fallbackResponseText);
-      console.log('[neo4j-waste-query] Fallback API succeeded');
-      return processNeo4jResponse(fallbackResult, wasteCategory);
+      console.error(`[neo4j-waste-query] Neo4j HTTP API error response: ${responseText}`);
+      throw new Error(`Neo4j API error: ${response.status} - ${responseText}`);
     }
     
-    console.log(`[neo4j-waste-query] Neo4j REST API response text: ${responseText.substring(0, 500)}...`);
+    console.log(`[neo4j-waste-query] Neo4j HTTP API response text: ${responseText.substring(0, 500)}...`);
 
     const result = JSON.parse(responseText);
     return processNeo4jResponse(result, wasteCategory);
