@@ -1,11 +1,17 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { userStudyService, UserStudyData } from './userStudyService';
 
 export interface UserProfile {
   id: string;
   name: string;
   language: 'EN' | 'DE';
   avatar_emoji?: string;
+  age?: number;
+  gender?: string;
+  nationality?: string;
+  data_usage_approved?: boolean;
+  registration_completed?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -20,7 +26,8 @@ export const profileService = {
         id: userId,
         name,
         language,
-        avatar_emoji: '🌱'
+        avatar_emoji: '🌱',
+        registration_completed: false
       })
       .select()
       .single();
@@ -84,7 +91,7 @@ export const profileService = {
     
     if (!existingProfile) {
       console.log('Profile not found, creating...');
-      // Create profile
+      // Create profile with registration_completed = false
       await this.createUserProfile(userId, name || 'Player', language);
       
       // Create progress
@@ -92,5 +99,28 @@ export const profileService = {
     } else {
       console.log('Profile already exists:', existingProfile);
     }
+  },
+
+  async completeUserRegistration(userId: string, userData: UserStudyData & { avatar?: any }) {
+    console.log('Completing user registration with study data:', userData);
+    
+    // Complete registration using the database function
+    const success = await userStudyService.completeUserRegistration(userId, {
+      name: userData.name,
+      age: userData.age,
+      gender: userData.gender,
+      nationality: userData.nationality,
+      dataUsageApproved: userData.dataUsageApproved
+    });
+
+    if (success && userData.avatar) {
+      // Update avatar emoji
+      await supabase
+        .from('profiles')
+        .update({ avatar_emoji: userData.avatar.emoji })
+        .eq('id', userId);
+    }
+
+    return success;
   }
 };

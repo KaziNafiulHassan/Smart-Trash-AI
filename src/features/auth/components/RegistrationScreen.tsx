@@ -4,6 +4,7 @@ import { User, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Language } from '@/types/common';
+import UserStudyRegistrationForm from './UserStudyRegistrationForm';
 
 interface RegistrationScreenProps {
   language: Language;
@@ -27,27 +28,30 @@ const texts = {
     subtitle: 'Choose your eco-warrior avatar and name',
     namePlaceholder: 'Enter your name',
     selectAvatar: 'Select Your Avatar',
-    startJourney: 'Start My Eco Journey!',
-    nameRequired: 'Please enter your name'
+    continue: 'Continue to Registration',
+    nameRequired: 'Please enter your name',
+    back: 'Back'
   },
   DE: {
     title: 'Erstelle Dein Profil',
     subtitle: 'Wähle Deinen Öko-Krieger Avatar und Namen',
     namePlaceholder: 'Gib Deinen Namen ein',
     selectAvatar: 'Wähle Deinen Avatar',
-    startJourney: 'Starte Meine Öko-Reise!',
-    nameRequired: 'Bitte gib Deinen Namen ein'
+    continue: 'Weiter zur Registrierung',
+    nameRequired: 'Bitte gib Deinen Namen ein',
+    back: 'Zurück'
   }
 };
 
 const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ language, onRegistration }) => {
+  const [step, setStep] = useState<'avatar' | 'studyForm'>('avatar');
   const [name, setName] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<number | null>(null);
   const [error, setError] = useState('');
 
   const t = texts[language];
 
-  const handleSubmit = () => {
+  const handleAvatarStepComplete = () => {
     if (!name.trim()) {
       setError(t.nameRequired);
       return;
@@ -56,12 +60,27 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ language, onReg
       return;
     }
 
+    setStep('studyForm');
+  };
+
+  const handleStudyFormComplete = (studyData: any) => {
     const avatar = avatars.find(a => a.id === selectedAvatar);
     onRegistration({
-      name: name.trim(),
-      avatar: avatar
+      name: studyData.name, // Use the name from study form
+      avatar: avatar,
+      studyData: studyData
     });
   };
+
+  if (step === 'studyForm') {
+    return (
+      <UserStudyRegistrationForm
+        language={language}
+        onComplete={handleStudyFormComplete}
+        onBack={() => setStep('avatar')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col p-6 text-white">
@@ -113,11 +132,11 @@ const RegistrationScreen: React.FC<RegistrationScreenProps> = ({ language, onReg
         </div>
 
         <Button
-          onClick={handleSubmit}
+          onClick={handleAvatarStepComplete}
           disabled={!name.trim() || !selectedAvatar}
           className="w-full max-w-sm mt-8 py-4 text-lg font-semibold bg-green-500 hover:bg-green-600 disabled:bg-gray-500 disabled:opacity-50 text-white rounded-xl shadow-lg transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
         >
-          {t.startJourney}
+          {t.continue}
         </Button>
       </div>
     </div>

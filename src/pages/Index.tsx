@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import AuthScreen from '@/components/Auth/AuthScreen';
 import { OnboardingScreen } from '@/features/auth';
+import RegistrationScreen from '@/features/auth/components/RegistrationScreen';
 import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
@@ -10,9 +10,10 @@ import BackendArchitecture from '@/pages/BackendArchitecture';
 import AIWasteSorter from '@/components/AIWasteSorter';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
+import { userStudyService } from '@/services/userStudyService';
 import { Language, Screen } from '@/types/common';
 
-type ExtendedScreen = Screen | 'backendArchitecture' | 'aiSorting';
+type ExtendedScreen = Screen | 'backendArchitecture' | 'aiSorting' | 'registration';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -31,11 +32,30 @@ const Index = () => {
 
   useEffect(() => {
     if (user) {
-      console.log('User authenticated, loading progress...', user.id);
-      // Load user progress when user is authenticated
-      loadUserProgress();
+      console.log('User authenticated, checking registration status...', user.id);
+      checkUserRegistrationStatus();
+    } else if (!loading) {
+      setCurrentScreen('auth');
+    }
+  }, [user, loading]);
+
+  const checkUserRegistrationStatus = async () => {
+    if (!user) return;
+
+    try {
+      // Check if user has completed registration
+      const isRegistrationComplete = await userStudyService.checkRegistrationStatus(user.id);
       
-      // Check if user needs onboarding (new user)
+      if (!isRegistrationComplete) {
+        console.log('User registration not complete, showing registration form');
+        setCurrentScreen('registration');
+        return;
+      }
+
+      // Load user progress
+      await loadUserProgress();
+      
+      // Check if user needs onboarding
       const userCreatedAt = new Date(user.created_at);
       const now = new Date();
       const timeDiff = now.getTime() - userCreatedAt.getTime();
@@ -47,10 +67,11 @@ const Index = () => {
       } else {
         setCurrentScreen('gameHome');
       }
-    } else if (!loading) {
-      setCurrentScreen('auth');
+    } catch (error) {
+      console.error('Error checking user registration status:', error);
+      setCurrentScreen('gameHome'); // Fallback to game home
     }
-  }, [user, loading]);
+  };
 
   const loadUserProgress = async () => {
     if (!user) return;
@@ -66,7 +87,6 @@ const Index = () => {
       setGameProgress(progress);
     } else {
       console.log('No progress found, using defaults');
-      // Keep default progress if none found
     }
   };
 
@@ -75,13 +95,34 @@ const Index = () => {
     // User is now authenticated, useAuth hook will handle the state
   };
 
+  const handleRegistrationComplete = async (userData: any) => {
+    if (!user) return;
+
+    console.log('Registration data received:', userData);
+    
+    try {
+      const success = await profileService.completeUserRegistration(user.id, userData.studyData || userData);
+      
+      if (success) {
+        console.log('User registration completed successfully');
+        // Reload user progress and proceed to game
+        await loadUserProgress();
+        setCurrentScreen('gameHome');
+      } else {
+        console.error('Failed to complete user registration');
+      }
+    } catch (error) {
+      console.error('Error completing registration:', error);
+    }
+  };
+
   const handleOnboardingComplete = () => {
     setShowOnboarding(false);
     setCurrentScreen('gameHome');
   };
 
   const handleStartEcoSort = () => {
-    setCurrentScreen('gameLevel'); // Go directly to game level
+    setCurrentScreen('gameLevel');
   };
 
   const handleStartAISorting = () => {
@@ -117,7 +158,6 @@ const Index = () => {
 
     setGameProgress(newProgress);
 
-    // Save to database
     try {
       await gameService.updateUserProgress(user.id, newProgress);
     } catch (error) {
@@ -143,6 +183,8 @@ const Index = () => {
     }
 
     switch (currentScreen) {
+      case 'registration':
+        return <RegistrationScreen language={language} onRegistration={handleRegistrationComplete} />;
       case 'onboarding':
         return <OnboardingScreen language={language} onComplete={handleOnboardingComplete} />;
       case 'gameHome':

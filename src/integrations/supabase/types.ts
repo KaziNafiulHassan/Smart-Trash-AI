@@ -109,7 +109,15 @@ export type Database = {
           time_spent?: number | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_game_sessions_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       image_classifications: {
         Row: {
@@ -148,31 +156,54 @@ export type Database = {
           user_id?: string | null
           user_selected_bin?: Database["public"]["Enums"]["bin_type"] | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_image_classifications_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_emoji: string | null
           created_at: string | null
+          data_usage_approved: boolean | null
+          gender: string | null
           id: string
           language: Database["public"]["Enums"]["user_language"] | null
           name: string
+          nationality: string | null
+          registration_completed: boolean | null
           updated_at: string | null
         }
         Insert: {
+          age?: number | null
           avatar_emoji?: string | null
           created_at?: string | null
+          data_usage_approved?: boolean | null
+          gender?: string | null
           id: string
           language?: Database["public"]["Enums"]["user_language"] | null
           name: string
+          nationality?: string | null
+          registration_completed?: boolean | null
           updated_at?: string | null
         }
         Update: {
+          age?: number | null
           avatar_emoji?: string | null
           created_at?: string | null
+          data_usage_approved?: boolean | null
+          gender?: string | null
           id?: string
           language?: Database["public"]["Enums"]["user_language"] | null
           name?: string
+          nationality?: string | null
+          registration_completed?: boolean | null
           updated_at?: string | null
         }
         Relationships: []
@@ -197,6 +228,20 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_user_achievements_achievement_id"
+            columns: ["achievement_id"]
+            isOneToOne: false
+            referencedRelation: "achievements"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_user_achievements_user_id"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "user_achievements_achievement_id_fkey"
             columns: ["achievement_id"]
@@ -246,7 +291,62 @@ export type Database = {
           updated_at?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "fk_user_progress_user_id"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_study_data: {
+        Row: {
+          additional_notes: string | null
+          age: number | null
+          consent_timestamp: string | null
+          created_at: string | null
+          data_usage_approved: boolean
+          gender: string | null
+          id: string
+          nationality: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          age?: number | null
+          consent_timestamp?: string | null
+          created_at?: string | null
+          data_usage_approved?: boolean
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          additional_notes?: string | null
+          age?: number | null
+          consent_timestamp?: string | null
+          created_at?: string | null
+          data_usage_approved?: boolean
+          gender?: string | null
+          id?: string
+          nationality?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_study_data_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       waste_items: {
         Row: {
@@ -278,6 +378,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_waste_items_category_id"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "waste_items_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -291,7 +398,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      complete_user_registration: {
+        Args: {
+          p_user_id: string
+          p_name: string
+          p_age: number
+          p_gender: string
+          p_nationality: string
+          p_data_usage_approved: boolean
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       bin_type:
