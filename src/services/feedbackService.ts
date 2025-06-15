@@ -41,7 +41,11 @@ export const feedbackService = {
         return [];
       }
 
-      return data || [];
+      // Type cast the feedback_type to ensure it matches our interface
+      return (data || []).map(item => ({
+        ...item,
+        feedback_type: item.feedback_type as 'graph' | 'graphrag'
+      }));
     } catch (error) {
       console.error('Error in getUserFeedbackRatings:', error);
       return [];
