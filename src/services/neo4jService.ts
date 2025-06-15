@@ -14,6 +14,7 @@ class Neo4jService {
   private isConnected = false;
 
   constructor() {
+    console.log('Neo4j Service: Constructor called');
     this.initializeDriver();
   }
 
@@ -51,8 +52,8 @@ class Neo4jService {
     const session = await this.getSession();
 
     if (!session) {
-      console.log('Neo4j Service: No session available, using fallback data');
-      return this.getFallbackData(binType);
+      console.error('Neo4j Service: No session available - connection failed');
+      throw new Error('Neo4j connection failed - cannot retrieve waste information');
     }
 
     try {
@@ -95,73 +96,18 @@ class Neo4jService {
         console.log('Neo4j Service: Successfully retrieved data:', graphData);
         return graphData;
       } else {
-        console.warn(`Neo4j Service: No data found for item: ${itemName}, using fallback`);
-        return this.getFallbackData(binType);
+        console.warn(`Neo4j Service: No data found for item: ${itemName}`);
+        throw new Error(`No waste information found for item: ${itemName}`);
       }
     } catch (error) {
       console.error('Neo4j Service: Error querying database:', error);
-      return this.getFallbackData(binType);
+      throw error;
     } finally {
       await session.close();
     }
   }
 
-  private getFallbackData(binType: string): GraphData {
-    // Fallback mock data when Neo4j is unavailable
-    const mockGraphData: Record<string, GraphData> = {
-      'paper': {
-        correctBin: 'Paper Bin',
-        category: 'Paper',
-        material: 'fiber-based',
-        rule: 'keep it dry and peel off plastic coating',
-        recyclingCenter: 'City Paper Center (45 Eco St)'
-      },
-      'plastic': {
-        correctBin: 'Lightweight Packaging Bin',
-        category: 'Plastic',
-        material: 'polymer-based',
-        rule: 'rinse containers and remove caps',
-        recyclingCenter: 'Metro Plastic Facility (123 Green Ave)'
-      },
-      'glass': {
-        correctBin: 'Waste Glass Container',
-        category: 'Glass',
-        material: 'silicate-based',
-        rule: 'separate by color and remove metal caps',
-        recyclingCenter: 'Glass Recycling Hub (89 Clear St)'
-      },
-      'bio': {
-        correctBin: 'Bio Bin',
-        category: 'Organic',
-        material: 'biodegradable',
-        rule: 'no meat, bones or dairy products',
-        recyclingCenter: 'Composting Center (56 Nature Way)'
-      },
-      'residual': {
-        correctBin: 'Residual Waste Bin',
-        category: 'General Waste',
-        material: 'mixed materials',
-        rule: 'items that cannot be recycled elsewhere',
-        recyclingCenter: 'Municipal Waste Center (12 Main St)'
-      },
-      'hazardous': {
-        correctBin: 'Hazardous Waste Collection',
-        category: 'Hazardous',
-        material: 'toxic materials',
-        rule: 'handle with care and use protective equipment',
-        recyclingCenter: 'Hazmat Disposal Unit (78 Safety Blvd)'
-      },
-      'bulky': {
-        correctBin: 'Bulky Waste Container',
-        category: 'Bulky Items',
-        material: 'large household items',
-        rule: 'schedule pickup or bring to designated area',
-        recyclingCenter: 'Bulk Item Center (34 Storage Lane)'
-      }
-    };
 
-    return mockGraphData[binType] || mockGraphData['residual'];
-  }
 
   async testConnection(): Promise<boolean> {
     const session = await this.getSession();

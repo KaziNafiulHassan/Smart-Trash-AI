@@ -132,12 +132,12 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
         }
       }
 
-      // Fallback to enhanced mock response using graph data
+      // Fallback to enhanced response using actual Neo4j graph data
       return { message: this.generateFallbackResponse(itemName, isCorrect, binType, graphData, language) };
 
     } catch (error) {
       console.error('RAG LLM Service: Error generating feedback:', error);
-      return { message: this.generateBasicFallback(binType, language) };
+      throw new Error(`Failed to generate AI feedback: ${error.message}`);
     }
   }
 
@@ -218,34 +218,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
     }
   }
 
-  private generateBasicFallback(binType: string, language: Language): string {
-    // Basic fallback when all else fails
-    const basicResponses: Record<string, { EN: string; DE: string }> = {
-      'paper': {
-        EN: "Paper items should be kept dry and clean for proper recycling. Great choice for the environment! 📄♻️",
-        DE: "Papier sollte trocken und sauber gehalten werden für ordnungsgemäßes Recycling. Tolle Wahl für die Umwelt! 📄♻️"
-      },
-      'plastic': {
-        EN: "Plastic recycling helps reduce ocean pollution. Remember to rinse containers before disposal! 🌊♻️",
-        DE: "Plastik-Recycling hilft, Meeresverschmutzung zu reduzieren. Denken Sie daran, Behälter vor der Entsorgung zu spülen! 🌊♻️"
-      },
-      'glass': {
-        EN: "Glass can be recycled infinitely without losing quality. Separate by color when possible! 🍶♻️",
-        DE: "Glas kann unendlich oft recycelt werden, ohne an Qualität zu verlieren. Trennen Sie nach Farben, wenn möglich! 🍶♻️"
-      },
-      'bio': {
-        EN: "Organic waste creates valuable compost for gardens. Keep it separate from other waste! 🌱♻️",
-        DE: "Organische Abfälle schaffen wertvollen Kompost für Gärten. Halten Sie ihn getrennt von anderen Abfällen! 🌱♻️"
-      },
-      'residual': {
-        EN: "When in doubt, residual waste is often the safest choice. Keep learning about proper sorting! 🗑️",
-        DE: "Im Zweifel ist Restmüll oft die sicherste Wahl. Lernen Sie weiter über ordnungsgemäße Trennung! 🗑️"
-      }
-    };
 
-    const response = basicResponses[binType] || basicResponses['residual'];
-    return response[language];
-  }
 }
 
 // Export a singleton instance

@@ -10,6 +10,10 @@ const Neo4jTest: React.FC = () => {
   useEffect(() => {
     // Auto-test connection when component mounts
     console.log('Neo4j Test Page: Component mounted, testing connection...');
+    console.log('Environment variables check:');
+    console.log('VITE_NEO4J_URI:', import.meta.env.VITE_NEO4J_URI);
+    console.log('VITE_NEO4J_USERNAME:', import.meta.env.VITE_NEO4J_USERNAME);
+    console.log('VITE_NEO4J_PASSWORD length:', import.meta.env.VITE_NEO4J_PASSWORD?.length);
     testConnection();
   }, []);
 
@@ -30,11 +34,22 @@ const Neo4jTest: React.FC = () => {
   const testWasteItemQuery = async () => {
     setIsLoading(true);
     setTestResult(null);
-    
+
     try {
-      // Test with a common item name
-      const result = await neo4jService.getWasteItemInfo('paper', 'newspaper');
-      setTestResult(result);
+      // Test with multiple common item names to see what's in the database
+      const testItems = ['newspaper', 'plastic bottle', 'glass bottle', 'apple', 'cardboard'];
+      const results = [];
+
+      for (const item of testItems) {
+        try {
+          const result = await neo4jService.getWasteItemInfo('unknown', item);
+          results.push({ item, success: true, data: result });
+        } catch (error) {
+          results.push({ item, success: false, error: error.message });
+        }
+      }
+
+      setTestResult({ multipleItems: results });
     } catch (error) {
       setTestResult({ error: error.toString() });
     } finally {
@@ -75,11 +90,37 @@ const Neo4jTest: React.FC = () => {
         {testResult && (
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-lg">
             <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-              Query Result
+              Query Results
             </h2>
-            <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm overflow-auto text-gray-900 dark:text-gray-100">
-              {JSON.stringify(testResult, null, 2)}
-            </pre>
+
+            {testResult.multipleItems ? (
+              <div className="space-y-4">
+                {testResult.multipleItems.map((test: any, index: number) => (
+                  <div key={index} className="border border-gray-200 dark:border-gray-600 rounded p-4">
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                      Testing: "{test.item}" {test.success ? '✅' : '❌'}
+                    </h3>
+                    {test.success ? (
+                      <div className="bg-green-50 dark:bg-green-900 p-3 rounded">
+                        <p><strong>Correct Bin:</strong> {test.data.correctBin}</p>
+                        <p><strong>Category:</strong> {test.data.category}</p>
+                        <p><strong>Material:</strong> {test.data.material}</p>
+                        <p><strong>Rule:</strong> {test.data.rule}</p>
+                        <p><strong>Recycling Center:</strong> {test.data.recyclingCenter}</p>
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 dark:bg-red-900 p-3 rounded">
+                        <p className="text-red-700 dark:text-red-300">Error: {test.error}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm overflow-auto text-gray-900 dark:text-gray-100">
+                {JSON.stringify(testResult, null, 2)}
+              </pre>
+            )}
           </div>
         )}
       </div>

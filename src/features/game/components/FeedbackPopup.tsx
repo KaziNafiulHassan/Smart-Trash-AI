@@ -56,21 +56,38 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
     setIsLoading(true);
     try {
       // Load graph data from Neo4j service
+      console.log('FeedbackPopup: Loading Neo4j data...');
       const graphInfo = await neo4jService.getWasteItemInfo(
         feedback.bin?.id || 'residual',
         feedback.item?.item_name || ''
       );
       setGraphData(graphInfo);
+      console.log('FeedbackPopup: Neo4j data loaded successfully');
 
       // Load RAG message from LLM service
+      console.log('FeedbackPopup: Loading RAG feedback...');
       const ragResponse = await ragLLMService.generateFeedback(
         feedback.bin?.id || 'residual',
         feedback.item?.item_name || '',
         language
       );
       setRagMessage(ragResponse.message);
+      console.log('FeedbackPopup: RAG feedback loaded successfully');
     } catch (error) {
-      console.error('Error loading additional data:', error);
+      console.error('FeedbackPopup: Error loading additional data:', error);
+      // Set error messages for display
+      if (error.message.includes('Neo4j')) {
+        setGraphData({
+          correctBin: 'Connection Error',
+          category: 'Database Error',
+          material: 'Unable to connect to Neo4j database',
+          rule: 'Please check your internet connection and try again',
+          recyclingCenter: 'Service temporarily unavailable'
+        });
+      }
+      if (error.message.includes('AI feedback')) {
+        setRagMessage('Sorry, the AI assistant is temporarily unavailable. Please try again later.');
+      }
     } finally {
       setIsLoading(false);
     }
