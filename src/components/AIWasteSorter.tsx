@@ -5,22 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useOnnxClassifier } from "@/hooks/useOnnxClassifier";
 import { classMapping } from "@/data/classMapping";
-import { supabase } from "@/integrations/supabase/client";
-import WasteSorterSettings from "./WasteSorterSettings";
-import GraphFeedback from "./GraphFeedback";
 
 // Use the correct EfficientNet model URL from Supabase storage (fixed double slash)
 const MODEL_URL = "https://dwgolyqevdaqosteonfl.supabase.co/storage/v1/object/public/models/efficientnet_b0_waste.onnx";
-
-interface GraphFeedbackData {
-  bin_type: string;
-  bin_color: string;
-  allowed_in_bin: string;
-  recyclable: string;
-  rule_en: string;
-  rule_de?: string;
-  recycling_centers: string[];
-}
 
 const AIWasteSorter: React.FC = () => {
   const { session, loading, error, classify } = useOnnxClassifier(MODEL_URL, classMapping);
@@ -32,15 +19,11 @@ const AIWasteSorter: React.FC = () => {
     confidence: number;
   } | null>(null);
   const [isClassifying, setIsClassifying] = useState(false);
-  const [useGraph, setUseGraph] = useState(false);
-  const [graphData, setGraphData] = useState<GraphFeedbackData | null>(null);
-  const [isLoadingGraph, setIsLoadingGraph] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (selectedFile: File) => {
     setFile(selectedFile);
     setResult(null);
-    setGraphData(null);
     
     // Create preview
     const reader = new FileReader();
@@ -56,43 +39,14 @@ const AIWasteSorter: React.FC = () => {
     }
   };
 
-  const fetchGraphData = async (wasteCategory: string) => {
-    setIsLoadingGraph(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('neo4j-waste-query', {
-        body: { wasteCategory }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setGraphData(data.data);
-      } else {
-        console.warn('No graph data found for:', wasteCategory);
-        setGraphData(null);
-      }
-    } catch (error) {
-      console.error('Error fetching graph data:', error);
-      setGraphData(null);
-    } finally {
-      setIsLoadingGraph(false);
-    }
-  };
-
   const onClassify = async () => {
     if (!file || !session) return;
     
     setIsClassifying(true);
-    setGraphData(null);
     
     try {
       const res = await classify(file);
       setResult(res);
-      
-      // If graph mode is enabled, fetch additional data from Neo4j
-      if (useGraph && res.label) {
-        await fetchGraphData(res.label);
-      }
     } catch (e) {
       console.error("Classification error", e);
     } finally {
@@ -104,7 +58,6 @@ const AIWasteSorter: React.FC = () => {
     setFile(null);
     setPreview(null);
     setResult(null);
-    setGraphData(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -134,19 +87,13 @@ const AIWasteSorter: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="text-center flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            AI Waste Sorter
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300">
-            Upload an image to identify waste type and get sorting recommendations
-          </p>
-        </div>
-        <WasteSorterSettings 
-          useGraph={useGraph}
-          onToggleGraph={setUseGraph}
-        />
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          AI Waste Sorter
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
+          Upload an image to identify waste type and get sorting recommendations
+        </p>
       </div>
 
       {/* Model Status */}
@@ -236,40 +183,30 @@ const AIWasteSorter: React.FC = () => {
 
       {/* Results */}
       {result && (
-        <div className="space-y-4">
-          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 space-y-4">
-            <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">
-              Classification Result
-            </h3>
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-6 space-y-4">
+          <h3 className="text-lg font-semibold text-green-800 dark:text-green-200">
+            Classification Result
+          </h3>
+          
+          <div className="space-y-3">
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Waste Type:</span>
+              <span className="ml-2 text-lg font-bold text-green-700 dark:text-green-300">
+                {result.label}
+              </span>
+            </div>
             
-            <div className="space-y-3">
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Waste Type:</span>
-                <span className="ml-2 text-lg font-bold text-green-700 dark:text-green-300">
-                  {result.label}
-                </span>
-              </div>
-              
-              <div>
-                <span className="font-medium text-gray-700 dark:text-gray-300">Recommended Bin:</span>
-                <span className="ml-2 text-lg font-bold text-blue-700 dark:text-blue-300">
-                  {getBinRecommendation(result.label)}
-                </span>
-              </div>
-              
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Confidence Score: {result.logit.toFixed(2)}
-              </div>
+            <div>
+              <span className="font-medium text-gray-700 dark:text-gray-300">Recommended Bin:</span>
+              <span className="ml-2 text-lg font-bold text-blue-700 dark:text-blue-300">
+                {getBinRecommendation(result.label)}
+              </span>
+            </div>
+            
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              Confidence Score: {result.logit.toFixed(2)}
             </div>
           </div>
-
-          {/* Graph-based feedback */}
-          {useGraph && (isLoadingGraph || graphData) && (
-            <GraphFeedback 
-              data={graphData!}
-              isLoading={isLoadingGraph}
-            />
-          )}
         </div>
       )}
     </div>

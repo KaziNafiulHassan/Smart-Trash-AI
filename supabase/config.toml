@@ -1,8 +1,5 @@
 
 project_id = "dwgolyqevdaqosteonfl"
 
-[functions.neo4j-test]
-verify_jwt = false
-
-[functions.neo4j-waste-query]
+[functions.generate-feedback]
 verify_jwt = false
