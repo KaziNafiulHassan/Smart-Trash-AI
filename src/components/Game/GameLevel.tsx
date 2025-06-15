@@ -203,6 +203,18 @@ const GameLevel: React.FC<GameLevelProps> = ({
     }, 500);
   };
 
+  const generateFeedbackMessage = (isCorrect: boolean, itemName: string, itemDescription: string, selectedBin: string, correctBin: string) => {
+    if (isCorrect) {
+      return language === 'EN' 
+        ? `Excellent! ✅ ${itemName} belongs in the ${correctBin}.\n\n💡 Tip: ${itemDescription || 'Great job with waste sorting!'}`
+        : `Ausgezeichnet! ✅ ${itemName} gehört in die ${correctBin}.\n\n💡 Tipp: ${itemDescription || 'Großartige Arbeit beim Mülltrennen!'}`;
+    } else {
+      return language === 'EN'
+        ? `Not quite right. ❌ ${itemName} doesn't belong in the ${selectedBin}. It should go in the ${correctBin}.\n\n💡 Tip: ${itemDescription || 'Keep learning about proper waste sorting!'}`
+        : `Nicht ganz richtig. ❌ ${itemName} gehört nicht in die ${selectedBin}. Es sollte in die ${correctBin}.\n\n💡 Tipp: ${itemDescription || 'Weiter lernen über richtige Mülltrennung!'}`;
+    }
+  };
+
   const handleDrop = async (binId: string) => {
     if (!draggedItem || !user || !currentItem) return;
 
@@ -218,37 +230,19 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
     setAttempts(prev => prev + 1);
 
-    // Generate AI feedback using the description
-    let feedbackMessage = '';
-    try {
-      const { feedbackService } = await import('@/services/feedbackService');
-      
-      // Ensure we have the description in the correct language
-      const itemDescription = currentItem.description || '';
-      console.log('Using item description for feedback:', itemDescription);
-      
-      feedbackMessage = await feedbackService.generateFeedback({
-        itemName: currentItem.item_name,
-        itemDescription: itemDescription,
-        selectedBin: bin?.name || '',
-        correctBin: bins.find(b => b.id === currentItem.bin_type)?.name || '',
-        isCorrect,
-        language
-      });
-      
-      console.log('Generated feedback message:', feedbackMessage);
-    } catch (error) {
-      console.error('Error generating feedback:', error);
-      // Enhanced fallback that always includes description
-      const itemDescription = currentItem.description || '';
-      feedbackMessage = isCorrect 
-        ? (language === 'EN' 
-          ? `Correct! ${currentItem.item_name} belongs in the ${bin?.name}. ${itemDescription ? `Info: ${itemDescription}` : ''}`
-          : `Richtig! ${currentItem.item_name} gehört in die ${bin?.name}. ${itemDescription ? `Info: ${itemDescription}` : ''}`)
-        : (language === 'EN'
-          ? `Oops! ${currentItem.item_name} doesn't belong in the ${bin?.name}. It should go in the ${bins.find(b => b.id === currentItem.bin_type)?.name}. ${itemDescription ? `Remember: ${itemDescription}` : ''}`
-          : `Ups! ${currentItem.item_name} gehört nicht in die ${bin?.name}. Es sollte in die ${bins.find(b => b.id === currentItem.bin_type)?.name}. ${itemDescription ? `Denk daran: ${itemDescription}` : ''}`);
-    }
+    // Generate feedback using the description directly
+    const itemDescription = currentItem.description || '';
+    console.log('Using item description for feedback:', itemDescription);
+    
+    const feedbackMessage = generateFeedbackMessage(
+      isCorrect,
+      currentItem.item_name,
+      itemDescription,
+      bin?.name || '',
+      bins.find(b => b.id === currentItem.bin_type)?.name || ''
+    );
+    
+    console.log('Generated feedback message:', feedbackMessage);
 
     const feedback = {
       correct: isCorrect,
