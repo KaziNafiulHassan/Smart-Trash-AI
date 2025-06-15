@@ -166,21 +166,21 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
             </div>
           ) : (
             <>
-              {/* Graph Box */}
-              {graphData && (
-                <GraphBox
-                  data={graphData}
-                  language={language}
-                  onRating={handleGraphRating}
-                />
-              )}
-
-              {/* GraphRAG Box */}
+              {/* GraphRAG Box - AI Assistant (now appears first) */}
               {ragMessage && (
                 <GraphRAGBox
                   message={ragMessage}
                   language={language}
                   onRating={handleRAGRating}
+                />
+              )}
+
+              {/* Graph Box - Waste Information (now appears second) */}
+              {graphData && (
+                <GraphBox
+                  data={graphData}
+                  language={language}
+                  onRating={handleGraphRating}
                 />
               )}
             </>
