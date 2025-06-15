@@ -75,6 +75,36 @@ export type Database = {
         }
         Relationships: []
       }
+      feedback_ratings: {
+        Row: {
+          created_at: string
+          feedback_type: string
+          id: string
+          item_id: string | null
+          rating: number
+          session_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_type: string
+          id?: string
+          item_id?: string | null
+          rating: number
+          session_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          item_id?: string | null
+          rating?: number
+          session_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       game_sessions: {
         Row: {
           accuracy: number

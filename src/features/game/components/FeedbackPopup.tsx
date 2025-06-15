@@ -1,8 +1,14 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
+import { useAuth } from '@/hooks/useAuth';
+import GraphBox from '@/components/Game/GraphBox';
+import GraphRAGBox from '@/components/Game/GraphRAGBox';
+import { neo4jService } from '@/services/neo4jService';
+import { ragLLMService } from '@/services/ragLLMService';
+import { feedbackService } from '@/services/feedbackService';
 
 interface FeedbackPopupProps {
   feedback: {
@@ -20,28 +26,90 @@ const texts = {
     great: 'Great Job!',
     oops: 'Oops!',
     continue: 'Continue',
-    learMore: 'Learn More'
+    loading: 'Loading additional information...'
   },
   DE: {
     great: 'Toll gemacht!',
     oops: 'Ups!',
     continue: 'Weiter',
-    learMore: 'Mehr erfahren'
+    loading: 'Lade zusätzliche Informationen...'
   }
 };
 
 const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClose }) => {
+  const { user } = useAuth();
   const t = texts[language];
+  const [graphData, setGraphData] = useState<any>(null);
+  const [ragMessage, setRagMessage] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   // Split the message at "💡 Tip:" or "💡 Tipp:" to handle formatting
   const messageParts = feedback.message.split(/\n\n💡 (Tip|Tipp):/);
   const mainMessage = messageParts[0];
   const tipMessage = messageParts.length > 2 ? messageParts[2] : null;
 
+  useEffect(() => {
+    loadAdditionalData();
+  }, [feedback.item, feedback.bin]);
+
+  const loadAdditionalData = async () => {
+    setIsLoading(true);
+    try {
+      // Load graph data from Neo4j service
+      const graphInfo = await neo4jService.getWasteItemInfo(
+        feedback.bin?.id || 'residual',
+        feedback.item?.item_name || ''
+      );
+      setGraphData(graphInfo);
+
+      // Load RAG message from LLM service
+      const ragResponse = await ragLLMService.generateFeedback(
+        feedback.bin?.id || 'residual',
+        feedback.item?.item_name || '',
+        language
+      );
+      setRagMessage(ragResponse.message);
+    } catch (error) {
+      console.error('Error loading additional data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGraphRating = async (rating: number) => {
+    if (!user) return;
+    
+    try {
+      await feedbackService.saveFeedbackRating({
+        user_id: user.id,
+        feedback_type: 'graph',
+        rating,
+        item_id: feedback.item?.id
+      });
+    } catch (error) {
+      console.error('Error saving graph rating:', error);
+    }
+  };
+
+  const handleRAGRating = async (rating: number) => {
+    if (!user) return;
+    
+    try {
+      await feedbackService.saveFeedbackRating({
+        user_id: user.id,
+        feedback_type: 'graphrag',
+        rating,
+        item_id: feedback.item?.id
+      });
+    } catch (error) {
+      console.error('Error saving RAG rating:', error);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl animate-scale-in">
-        <div className="text-center">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
+        <div className="text-center mb-6">
           <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
             feedback.correct ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
           }`}>
@@ -87,18 +155,48 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
               </div>
             </div>
           )}
-
-          <Button
-            onClick={onClose}
-            className={`w-full py-3 text-lg font-semibold rounded-xl transition-all duration-200 ${
-              feedback.correct 
-                ? 'bg-green-500 hover:bg-green-600 text-white' 
-                : 'bg-red-500 hover:bg-red-600 text-white'
-            }`}
-          >
-            {t.continue}
-          </Button>
         </div>
+
+        {/* Additional Information Boxes */}
+        <div className="space-y-4 mb-6">
+          {isLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">{t.loading}</p>
+            </div>
+          ) : (
+            <>
+              {/* Graph Box */}
+              {graphData && (
+                <GraphBox
+                  data={graphData}
+                  language={language}
+                  onRating={handleGraphRating}
+                />
+              )}
+
+              {/* GraphRAG Box */}
+              {ragMessage && (
+                <GraphRAGBox
+                  message={ragMessage}
+                  language={language}
+                  onRating={handleRAGRating}
+                />
+              )}
+            </>
+          )}
+        </div>
+
+        <Button
+          onClick={onClose}
+          className={`w-full py-3 text-lg font-semibold rounded-xl transition-all duration-200 ${
+            feedback.correct 
+              ? 'bg-green-500 hover:bg-green-600 text-white' 
+              : 'bg-red-500 hover:bg-red-600 text-white'
+          }`}
+        >
+          {t.continue}
+        </Button>
       </div>
     </div>
   );
