@@ -1,51 +1,252 @@
 
 import { Language } from '@/types/common';
+import { neo4jService } from './neo4jService';
 
 interface RAGResponse {
   message: string;
 }
 
-// Mock LLM responses
-const mockRAGResponses: Record<string, { EN: string; DE: string }> = {
-  'paper': {
-    EN: "Great job! This item is made of fiber-based Paper, so it belongs in the Paper Bin. Just make sure to keep it dry and peel off any plastic coating before recycling. You can also drop off large volumes at City Paper Center (45 Eco St).",
-    DE: "Toll gemacht! Dieser Gegenstand besteht aus faserbasiertem Papier und gehört daher in die Papiertonne. Achten Sie darauf, dass es trocken bleibt und entfernen Sie alle Plastikbeschichtungen vor dem Recycling. Große Mengen können Sie auch im Papier-Center (45 Eco St) abgeben."
-  },
-  'plastic': {
-    EN: "Excellent choice! This plastic item belongs in the Lightweight Packaging Bin. Remember to rinse out any containers and remove bottle caps. For larger plastic items, visit Metro Plastic Facility (123 Green Ave).",
-    DE: "Ausgezeichnete Wahl! Dieser Plastikgegenstand gehört in die Gelbe Tonne. Denken Sie daran, Behälter auszuspülen und Verschlüsse zu entfernen. Für größere Plastikgegenstände besuchen Sie die Metro Plastik-Anlage (123 Green Ave)."
-  },
-  'glass': {
-    EN: "Perfect! Glass items go in the Waste Glass Container. Separate by color if possible and remove any metal caps or lids. The Glass Recycling Hub (89 Clear St) accepts larger glass items.",
-    DE: "Perfekt! Glasgegenstände gehören in den Altglascontainer. Trennen Sie nach Farben und entfernen Sie Metallverschlüsse. Das Glas-Recycling-Center (89 Clear St) nimmt größere Glasgegenstände an."
-  },
-  'bio': {
-    EN: "Well done! This organic waste belongs in the Bio Bin. Remember, no meat, bones, or dairy products should go here. The Composting Center (56 Nature Way) can handle larger organic waste.",
-    DE: "Gut gemacht! Dieser organische Abfall gehört in die Biotonne. Denken Sie daran: Fleisch, Knochen oder Milchprodukte gehören nicht hinein. Das Kompostierzentrum (56 Nature Way) kann größere organische Abfälle verarbeiten."
-  },
-  'residual': {
-    EN: "Correct! This item goes in the Residual Waste Bin for items that cannot be recycled elsewhere. The Municipal Waste Center (12 Main St) handles general waste disposal.",
-    DE: "Richtig! Dieser Gegenstand gehört in die Restmülltonne für Gegenstände, die nicht anderweitig recycelt werden können. Das Städtische Abfallzentrum (12 Main St) kümmert sich um die allgemeine Abfallentsorgung."
-  },
-  'hazardous': {
-    EN: "Important! This hazardous material requires special handling. Please use protective equipment and take it to the Hazmat Disposal Unit (78 Safety Blvd) for safe disposal.",
-    DE: "Wichtig! Dieses Gefahrgut erfordert eine besondere Behandlung. Bitte verwenden Sie Schutzausrüstung und bringen Sie es zur Giftmüll-Entsorgung (78 Safety Blvd) für eine sichere Entsorgung."
-  },
-  'bulky': {
-    EN: "That's right! Bulky items need special collection. Schedule a pickup or bring large items to the Bulk Item Center (34 Storage Lane) for proper disposal.",
-    DE: "Das ist richtig! Sperrmüll benötigt eine spezielle Abholung. Vereinbaren Sie einen Termin oder bringen Sie große Gegenstände zum Sperrmüll-Center (34 Storage Lane) für eine ordnungsgemäße Entsorgung."
-  }
-};
+interface GraphData {
+  correctBin: string;
+  category: string;
+  material: string;
+  rule: string;
+  recyclingCenter: string;
+}
 
-export const ragLLMService = {
-  async generateFeedback(binType: string, itemName: string, language: Language): Promise<RAGResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const response = mockRAGResponses[binType] || mockRAGResponses['residual'];
-    
-    return {
-      message: response[language]
-    };
+class RAGLLMService {
+  private apiKey: string;
+  private baseUrl: string = 'https://openrouter.ai/api/v1/chat/completions';
+  private model: string = 'google/gemma-2-9b-it:free'; // Using free Gemma model
+  private siteUrl: string;
+  private siteName: string;
+
+  constructor() {
+    this.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY || '';
+    this.siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:8080';
+    this.siteName = import.meta.env.VITE_SITE_NAME || 'Eco Sort Adventures';
+
+    if (!this.apiKey) {
+      console.warn('RAG LLM Service: OpenRouter API key not found, will use fallback responses');
+    }
   }
-};
+
+  private createSystemPrompt(language: Language): string {
+    if (language === 'DE') {
+      return `Du bist ein freundlicher und sachkundiger KI-Assistent für Mülltrennung und Recycling.
+      Deine Aufgabe ist es, Benutzern dabei zu helfen, Abfall richtig zu sortieren und zu entsorgen.
+
+      Antworte in einem natürlichen, gesprächigen Ton, als würdest du mit einem Freund sprechen.
+      Sei ermutigend, lehrreich und hilfreich. Verwende Emojis sparsam, um deine Nachrichten freundlicher zu gestalten.
+      Halte deine Antworten prägnant (2-3 Sätze) aber informativ.
+
+      Konzentriere dich auf:
+      - Warum der Gegenstand in diese Kategorie gehört
+      - Praktische Tipps für die Entsorgung
+      - Umweltauswirkungen oder Recycling-Vorteile
+      - Wo man den Gegenstand entsorgen kann`;
+    } else {
+      return `You are a friendly and knowledgeable AI assistant for waste sorting and recycling.
+      Your job is to help users properly sort and dispose of waste items.
+
+      Respond in a natural, conversational tone as if talking to a friend.
+      Be encouraging, educational, and helpful. Use emojis sparingly to make your messages friendlier.
+      Keep your responses concise (2-3 sentences) but informative.
+
+      Focus on:
+      - Why the item belongs in this category
+      - Practical disposal tips
+      - Environmental impact or recycling benefits
+      - Where to dispose of the item`;
+    }
+  }
+
+  private createUserPrompt(
+    itemName: string,
+    isCorrect: boolean,
+    selectedBin: string,
+    graphData: GraphData,
+    language: Language
+  ): string {
+    const contextInfo = `
+Item: ${itemName}
+Correct Bin: ${graphData.correctBin}
+Category: ${graphData.category}
+Material: ${graphData.material}
+Disposal Rule: ${graphData.rule}
+Recycling Center: ${graphData.recyclingCenter}
+`;
+
+    if (language === 'DE') {
+      if (isCorrect) {
+        return `Der Benutzer hat "${itemName}" korrekt in "${selectedBin}" sortiert.
+
+Kontext-Informationen:
+${contextInfo}
+
+Gib eine ermutigende Antwort, die erklärt, warum diese Wahl richtig war, und teile nützliche Tipps basierend auf den Kontext-Informationen mit.`;
+      } else {
+        return `Der Benutzer hat "${itemName}" fälschlicherweise in "${selectedBin}" sortiert, aber es gehört in "${graphData.correctBin}".
+
+Kontext-Informationen:
+${contextInfo}
+
+Erkläre freundlich, warum es in die richtige Tonne gehört, und gib hilfreiche Tipps basierend auf den Kontext-Informationen.`;
+      }
+    } else {
+      if (isCorrect) {
+        return `The user correctly sorted "${itemName}" into "${selectedBin}".
+
+Context Information:
+${contextInfo}
+
+Provide an encouraging response explaining why this choice was correct and share useful tips based on the context information.`;
+      } else {
+        return `The user incorrectly sorted "${itemName}" into "${selectedBin}", but it belongs in "${graphData.correctBin}".
+
+Context Information:
+${contextInfo}
+
+Kindly explain why it belongs in the correct bin and provide helpful tips based on the context information.`;
+      }
+    }
+  }
+
+  async generateFeedback(binType: string, itemName: string, language: Language): Promise<RAGResponse> {
+    console.log(`RAG LLM Service: Generating feedback for "${itemName}" with bin type "${binType}"`);
+
+    try {
+      // First, get the graph data from Neo4j
+      const graphData = await neo4jService.getWasteItemInfo(binType, itemName);
+      console.log('RAG LLM Service: Retrieved graph data:', graphData);
+
+      // Determine if the sorting was correct (simplified logic)
+      const isCorrect = graphData.correctBin.toLowerCase().includes(binType.toLowerCase()) ||
+                       binType.toLowerCase().includes(graphData.correctBin.toLowerCase().split(' ')[0]);
+
+      // Generate LLM response using graph data
+      if (this.apiKey) {
+        const llmResponse = await this.callOpenRouterAPI(itemName, isCorrect, binType, graphData, language);
+        if (llmResponse) {
+          return { message: llmResponse };
+        }
+      }
+
+      // Fallback to enhanced mock response using graph data
+      return { message: this.generateFallbackResponse(itemName, isCorrect, binType, graphData, language) };
+
+    } catch (error) {
+      console.error('RAG LLM Service: Error generating feedback:', error);
+      return { message: this.generateBasicFallback(binType, language) };
+    }
+  }
+
+  private async callOpenRouterAPI(
+    itemName: string,
+    isCorrect: boolean,
+    selectedBin: string,
+    graphData: GraphData,
+    language: Language
+  ): Promise<string | null> {
+    try {
+      console.log('RAG LLM Service: Calling OpenRouter API...');
+
+      const systemPrompt = this.createSystemPrompt(language);
+      const userPrompt = this.createUserPrompt(itemName, isCorrect, selectedBin, graphData, language);
+
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'HTTP-Referer': this.siteUrl,
+          'X-Title': this.siteName,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: userPrompt }
+          ],
+          max_tokens: 200,
+          temperature: 0.7
+        })
+      });
+
+      if (!response.ok) {
+        console.error('RAG LLM Service: OpenRouter API error:', response.status, response.statusText);
+        return null;
+      }
+
+      const data = await response.json();
+      const message = data.choices?.[0]?.message?.content;
+
+      if (message) {
+        console.log('RAG LLM Service: Successfully generated LLM response');
+        return message.trim();
+      } else {
+        console.warn('RAG LLM Service: No message content in API response');
+        return null;
+      }
+
+    } catch (error) {
+      console.error('RAG LLM Service: OpenRouter API call failed:', error);
+      return null;
+    }
+  }
+
+  private generateFallbackResponse(
+    itemName: string,
+    isCorrect: boolean,
+    selectedBin: string,
+    graphData: GraphData,
+    language: Language
+  ): string {
+    // Enhanced fallback using actual graph data
+    if (language === 'DE') {
+      if (isCorrect) {
+        return `Toll gemacht! 🎉 "${itemName}" gehört tatsächlich in die ${graphData.correctBin}. Da es aus ${graphData.material} besteht, ist das die richtige Wahl. Tipp: ${graphData.rule} Für größere Mengen können Sie auch das ${graphData.recyclingCenter} nutzen.`;
+      } else {
+        return `Nicht ganz richtig! 🤔 "${itemName}" gehört eigentlich in die ${graphData.correctBin}, nicht in die ${selectedBin}. Da es aus ${graphData.material} besteht, sollten Sie beachten: ${graphData.rule} Das ${graphData.recyclingCenter} kann Ihnen auch weiterhelfen.`;
+      }
+    } else {
+      if (isCorrect) {
+        return `Great job! 🎉 "${itemName}" indeed belongs in the ${graphData.correctBin}. Since it's made of ${graphData.material}, that's the right choice. Tip: ${graphData.rule} For larger quantities, you can also use ${graphData.recyclingCenter}.`;
+      } else {
+        return `Not quite right! 🤔 "${itemName}" actually belongs in the ${graphData.correctBin}, not the ${selectedBin}. Since it's made of ${graphData.material}, remember: ${graphData.rule} The ${graphData.recyclingCenter} can also help you.`;
+      }
+    }
+  }
+
+  private generateBasicFallback(binType: string, language: Language): string {
+    // Basic fallback when all else fails
+    const basicResponses: Record<string, { EN: string; DE: string }> = {
+      'paper': {
+        EN: "Paper items should be kept dry and clean for proper recycling. Great choice for the environment! 📄♻️",
+        DE: "Papier sollte trocken und sauber gehalten werden für ordnungsgemäßes Recycling. Tolle Wahl für die Umwelt! 📄♻️"
+      },
+      'plastic': {
+        EN: "Plastic recycling helps reduce ocean pollution. Remember to rinse containers before disposal! 🌊♻️",
+        DE: "Plastik-Recycling hilft, Meeresverschmutzung zu reduzieren. Denken Sie daran, Behälter vor der Entsorgung zu spülen! 🌊♻️"
+      },
+      'glass': {
+        EN: "Glass can be recycled infinitely without losing quality. Separate by color when possible! 🍶♻️",
+        DE: "Glas kann unendlich oft recycelt werden, ohne an Qualität zu verlieren. Trennen Sie nach Farben, wenn möglich! 🍶♻️"
+      },
+      'bio': {
+        EN: "Organic waste creates valuable compost for gardens. Keep it separate from other waste! 🌱♻️",
+        DE: "Organische Abfälle schaffen wertvollen Kompost für Gärten. Halten Sie ihn getrennt von anderen Abfällen! 🌱♻️"
+      },
+      'residual': {
+        EN: "When in doubt, residual waste is often the safest choice. Keep learning about proper sorting! 🗑️",
+        DE: "Im Zweifel ist Restmüll oft die sicherste Wahl. Lernen Sie weiter über ordnungsgemäße Trennung! 🗑️"
+      }
+    };
+
+    const response = basicResponses[binType] || basicResponses['residual'];
+    return response[language];
+  }
+}
+
+// Export a singleton instance
+export const ragLLMService = new RAGLLMService();
