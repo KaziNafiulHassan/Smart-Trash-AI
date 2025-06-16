@@ -40,7 +40,7 @@ class Neo4jService {
 
   private async getSession(): Promise<Session | null> {
     if (!this.driver || !this.isConnected) {
-      console.warn('Neo4j driver not available, falling back to mock data');
+      console.error('Neo4j driver not available - connection failed');
       return null;
     }
     return this.driver.session();
