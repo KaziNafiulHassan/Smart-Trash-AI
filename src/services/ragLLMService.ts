@@ -17,7 +17,7 @@ interface GraphData {
 class RAGLLMService {
   private apiKey: string;
   private baseUrl: string = 'https://openrouter.ai/api/v1/chat/completions';
-  private model: string = 'google/gemma-2-9b-it:free'; // Using free Gemma model
+  private model: string = 'google/gemma-2-9b-it:free'; // Using the exact model from demo code
   private siteUrl: string;
   private siteName: string;
 
@@ -26,8 +26,16 @@ class RAGLLMService {
     this.siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:8080';
     this.siteName = import.meta.env.VITE_SITE_NAME || 'Eco Sort Adventures';
 
+    console.log('RAG LLM Service: Constructor called');
+    console.log('RAG LLM Service: API Key length:', this.apiKey ? this.apiKey.length : 0);
+    console.log('RAG LLM Service: Site URL:', this.siteUrl);
+    console.log('RAG LLM Service: Site Name:', this.siteName);
+    console.log('RAG LLM Service: Model:', this.model);
+
     if (!this.apiKey) {
       console.warn('RAG LLM Service: OpenRouter API key not found, will use fallback responses');
+    } else {
+      console.log('RAG LLM Service: API key loaded successfully');
     }
   }
 
@@ -126,10 +134,16 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
 
       // Generate LLM response using graph data
       if (this.apiKey) {
+        console.log('RAG LLM Service: API key available, calling OpenRouter...');
         const llmResponse = await this.callOpenRouterAPI(itemName, isCorrect, binType, graphData, language);
         if (llmResponse) {
+          console.log('RAG LLM Service: LLM response received, returning it');
           return { message: llmResponse };
+        } else {
+          console.warn('RAG LLM Service: LLM response was null, falling back to enhanced response');
         }
+      } else {
+        console.warn('RAG LLM Service: No API key available, skipping LLM call');
       }
 
       // Fallback to enhanced response using actual Neo4j graph data
@@ -150,9 +164,28 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
   ): Promise<string | null> {
     try {
       console.log('RAG LLM Service: Calling OpenRouter API...');
+      console.log('RAG LLM Service: API URL:', this.baseUrl);
+      console.log('RAG LLM Service: Model:', this.model);
+      console.log('RAG LLM Service: Site URL:', this.siteUrl);
+      console.log('RAG LLM Service: API Key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
 
       const systemPrompt = this.createSystemPrompt(language);
       const userPrompt = this.createUserPrompt(itemName, isCorrect, selectedBin, graphData, language);
+
+      console.log('RAG LLM Service: System prompt length:', systemPrompt.length);
+      console.log('RAG LLM Service: User prompt length:', userPrompt.length);
+
+      const requestBody = {
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+        max_tokens: 200,
+        temperature: 0.7
+      };
+
+      console.log('RAG LLM Service: Request body:', JSON.stringify(requestBody, null, 2));
 
       const response = await fetch(this.baseUrl, {
         method: 'POST',
@@ -162,30 +195,30 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
           'X-Title': this.siteName,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          model: this.model,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userPrompt }
-          ],
-          max_tokens: 200,
-          temperature: 0.7
-        })
+        body: JSON.stringify(requestBody)
       });
 
+      console.log('RAG LLM Service: Response status:', response.status);
+      console.log('RAG LLM Service: Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
+        const errorText = await response.text();
         console.error('RAG LLM Service: OpenRouter API error:', response.status, response.statusText);
+        console.error('RAG LLM Service: Error response body:', errorText);
         return null;
       }
 
       const data = await response.json();
+      console.log('RAG LLM Service: Full API response:', JSON.stringify(data, null, 2));
+
       const message = data.choices?.[0]?.message?.content;
 
       if (message) {
-        console.log('RAG LLM Service: Successfully generated LLM response');
+        console.log('RAG LLM Service: Successfully generated LLM response:', message);
         return message.trim();
       } else {
         console.warn('RAG LLM Service: No message content in API response');
+        console.warn('RAG LLM Service: Response structure:', data);
         return null;
       }
 
@@ -218,6 +251,50 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
     }
   }
 
+  // Test method to debug OpenRouter API
+  async testOpenRouterAPI(): Promise<any> {
+    console.log('RAG LLM Service: Testing OpenRouter API directly...');
+
+    if (!this.apiKey) {
+      return { error: 'No API key available' };
+    }
+
+    try {
+      const response = await fetch(this.baseUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'HTTP-Referer': this.siteUrl,
+          'X-Title': this.siteName,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'user', content: 'Hello, can you respond with a simple greeting?' }
+          ],
+          max_tokens: 50,
+          temperature: 0.7
+        })
+      });
+
+      console.log('Test API Response status:', response.status);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        return {
+          error: `API Error: ${response.status} ${response.statusText}`,
+          details: errorText
+        };
+      }
+
+      const data = await response.json();
+      return { success: true, data };
+
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
 
 }
 

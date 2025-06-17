@@ -26,21 +26,35 @@ const RAGTest: React.FC = () => {
   const testWithDifferentItems = async () => {
     setIsLoading(true);
     setTestResult(null);
-    
+
     try {
       const testItems = [
         { binType: 'plastic', itemName: 'plastic bottle' },
         { binType: 'glass', itemName: 'wine bottle' },
         { binType: 'bio', itemName: 'apple core' }
       ];
-      
+
       const results = [];
       for (const item of testItems) {
         const result = await ragLLMService.generateFeedback(item.binType, item.itemName, language);
         results.push({ item: item.itemName, binType: item.binType, response: result });
       }
-      
+
       setTestResult({ multipleTests: results });
+    } catch (error) {
+      setTestResult({ error: error.toString() });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testOpenRouterAPI = async () => {
+    setIsLoading(true);
+    setTestResult(null);
+
+    try {
+      const result = await ragLLMService.testOpenRouterAPI();
+      setTestResult({ apiTest: result });
     } catch (error) {
       setTestResult({ error: error.toString() });
     } finally {
@@ -82,12 +96,19 @@ const RAGTest: React.FC = () => {
             >
               {isLoading ? 'Testing...' : 'Test Single Item (Newspaper)'}
             </Button>
-            <Button 
-              onClick={testWithDifferentItems} 
+            <Button
+              onClick={testWithDifferentItems}
               disabled={isLoading}
               variant="outline"
             >
               {isLoading ? 'Testing...' : 'Test Multiple Items'}
+            </Button>
+            <Button
+              onClick={testOpenRouterAPI}
+              disabled={isLoading}
+              variant="secondary"
+            >
+              {isLoading ? 'Testing...' : 'Test OpenRouter API'}
             </Button>
           </div>
         </div>
@@ -110,6 +131,15 @@ const RAGTest: React.FC = () => {
                     </p>
                   </div>
                 ))}
+              </div>
+            ) : testResult.apiTest ? (
+              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded">
+                <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                  OpenRouter API Test Result
+                </h3>
+                <pre className="text-sm overflow-auto text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
+                  {JSON.stringify(testResult.apiTest, null, 2)}
+                </pre>
               </div>
             ) : (
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded">
