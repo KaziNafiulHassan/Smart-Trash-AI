@@ -150,16 +150,12 @@ const GameLevel: React.FC<GameLevelProps> = ({
   };
 
   const handleTimeOut = () => {
-    // Handle timeout scenario
-    const feedbackMessage = language === 'EN' 
-      ? 'Time\'s up! Try to be faster next time.'
-      : 'Zeit abgelaufen! Versuche beim nächsten Mal schneller zu sein.';
-    
+    // Handle timeout scenario - AI Assistant and Waste Information will provide the feedback
     const feedback = {
       correct: false,
       item: currentItem,
       bin: bins[0],
-      message: feedbackMessage
+      message: '' // No longer using Supabase-based feedback message
     };
 
     setFeedbackData(feedback);
@@ -203,17 +199,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
     }, 500);
   };
 
-  const generateFeedbackMessage = (isCorrect: boolean, itemName: string, itemDescription: string, selectedBin: string, correctBin: string) => {
-    if (isCorrect) {
-      return language === 'EN' 
-        ? `Excellent! ✅ ${itemName} belongs in the ${correctBin}.\n\n💡 Tip: ${itemDescription || 'Great job with waste sorting!'}`
-        : `Ausgezeichnet! ✅ ${itemName} gehört in die ${correctBin}.\n\n💡 Tipp: ${itemDescription || 'Großartige Arbeit beim Mülltrennen!'}`;
-    } else {
-      return language === 'EN'
-        ? `Not quite right. ❌ ${itemName} doesn't belong in the ${selectedBin}. It should go in the ${correctBin}.\n\n💡 Tip: ${itemDescription || 'Keep learning about proper waste sorting!'}`
-        : `Nicht ganz richtig. ❌ ${itemName} gehört nicht in die ${selectedBin}. Es sollte in die ${correctBin}.\n\n💡 Tipp: ${itemDescription || 'Weiter lernen über richtige Mülltrennung!'}`;
-    }
-  };
+
 
   const handleDrop = async (binId: string) => {
     if (!draggedItem || !user || !currentItem) return;
@@ -230,25 +216,12 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
     setAttempts(prev => prev + 1);
 
-    // Generate feedback using the description directly
-    const itemDescription = currentItem.description || '';
-    console.log('Using item description for feedback:', itemDescription);
-    
-    const feedbackMessage = generateFeedbackMessage(
-      isCorrect,
-      currentItem.item_name,
-      itemDescription,
-      bin?.name || '',
-      bins.find(b => b.id === currentItem.bin_type)?.name || ''
-    );
-    
-    console.log('Generated feedback message:', feedbackMessage);
-
+    // Create minimal feedback data - AI Assistant and Waste Information will provide the feedback
     const feedback = {
       correct: isCorrect,
       item: currentItem,
       bin: bin,
-      message: feedbackMessage
+      message: '' // No longer using Supabase-based feedback message
     };
 
     setFeedbackData(feedback);

@@ -43,10 +43,7 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
   const [ragMessage, setRagMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Split the message at "💡 Tip:" or "💡 Tipp:" to handle formatting
-  const messageParts = feedback.message.split(/\n\n💡 (Tip|Tipp):/);
-  const mainMessage = messageParts[0];
-  const tipMessage = messageParts.length > 2 ? messageParts[2] : null;
+  // No longer using Supabase-based feedback messages - only AI Assistant and Waste Information
 
   useEffect(() => {
     loadAdditionalData();
@@ -143,35 +140,24 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
             {feedback.correct ? t.great : t.oops}
           </h2>
           
-          <div className="text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
-            <p className="mb-3">{mainMessage}</p>
-            {tipMessage && (
-              <p className="text-base bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg border-l-4 border-blue-400">
-                <span className="text-2xl">🤖</span> {tipMessage}
-              </p>
-            )}
-          </div>
-
-          {/* Only show visual indicator if there's no tip message */}
-          {!tipMessage && (
-            <div className="flex items-center justify-center space-x-3 mb-6">
-              <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-700">
-                {feedback.item.image_url ? (
-                  <img 
-                    src={feedback.item.image_url} 
-                    alt={feedback.item.item_name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-2xl">📦</span>
-                )}
-              </div>
-              <span className="text-2xl dark:text-gray-300">→</span>
-              <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feedback.bin.color}`}>
-                <span className="text-white text-xl">🗑️</span>
-              </div>
+          {/* Visual indicator showing item and bin selection */}
+          <div className="flex items-center justify-center space-x-3 mb-6">
+            <div className="w-12 h-12 rounded-lg overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+              {feedback.item.image_url ? (
+                <img
+                  src={feedback.item.image_url}
+                  alt={feedback.item.item_name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-2xl">📦</span>
+              )}
             </div>
-          )}
+            <span className="text-2xl dark:text-gray-300">→</span>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${feedback.bin.color}`}>
+              <span className="text-white text-xl">🗑️</span>
+            </div>
+          </div>
         </div>
 
         {/* Additional Information Boxes */}
