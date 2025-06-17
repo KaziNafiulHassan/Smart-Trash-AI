@@ -17,7 +17,7 @@ interface GraphData {
 class RAGLLMService {
   private apiKey: string;
   private baseUrl: string = 'https://openrouter.ai/api/v1/chat/completions';
-  private model: string = 'google/gemma-2-9b-it:free'; // Using the exact model from demo code
+  private model: string = 'meta-llama/llama-3.2-3b-instruct:free'; // Updated to working model
   private siteUrl: string;
   private siteName: string;
 
