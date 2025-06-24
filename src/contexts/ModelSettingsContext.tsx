@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
-export type LLMModel = 
-  | 'deepseek/deepseek-r1-0528-qwen3-8b:free'
+export type LLMModel =
+  | 'meta-llama/llama-3.1-8b-instruct:free'
   | 'mistralai/mistral-7b-instruct:free'
-  | 'meta-llama/llama-3.3-8b-instruct:free';
+  | 'meta-llama/llama-3.2-3b-instruct:free'
+  | 'qwen/qwen2.5-vl-32b-instruct:free';
 
 export interface ModelInfo {
   id: LLMModel;
@@ -13,9 +14,9 @@ export interface ModelInfo {
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
-    id: 'deepseek/deepseek-r1-0528-qwen3-8b:free',
-    name: 'DeepSeek R1 Qwen3 8B',
-    description: 'Advanced reasoning model with strong analytical capabilities'
+    id: 'meta-llama/llama-3.1-8b-instruct:free',
+    name: 'Llama 3.1 8B Instruct',
+    description: 'Powerful Llama model with excellent instruction following'
   },
   {
     id: 'mistralai/mistral-7b-instruct:free',
@@ -23,9 +24,14 @@ export const AVAILABLE_MODELS: ModelInfo[] = [
     description: 'Efficient instruction-following model with balanced performance'
   },
   {
-    id: 'meta-llama/llama-3.3-8b-instruct:free',
-    name: 'Llama 3.3 8B Instruct',
-    description: 'Latest Llama model with improved instruction following'
+    id: 'meta-llama/llama-3.2-3b-instruct:free',
+    name: 'Llama 3.2 3B Instruct',
+    description: 'Compact and efficient Llama model with good performance'
+  },
+  {
+    id: 'qwen/qwen2.5-vl-32b-instruct:free',
+    name: 'Qwen 2.5 VL 32B Instruct',
+    description: 'Large multimodal model with comprehensive responses and high quality'
   }
 ];
 
@@ -54,7 +60,7 @@ export const ModelSettingsProvider: React.FC<ModelSettingsProviderProps> = ({ ch
     const savedModel = localStorage.getItem('selectedLLMModel') as LLMModel;
     return savedModel && AVAILABLE_MODELS.some(m => m.id === savedModel) 
       ? savedModel 
-      : 'meta-llama/llama-3.3-8b-instruct:free'; // Default to Llama 3.3
+      : 'meta-llama/llama-3.1-8b-instruct:free'; // Default to Llama 3.1
   });
 
   useEffect(() => {

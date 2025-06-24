@@ -13,7 +13,6 @@ import {
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
-import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import SettingsPanel from './SettingsPanel';
 
 interface GameLevelProps {
@@ -30,7 +29,6 @@ const GameLevel: React.FC<GameLevelProps> = ({
   onBackToHome
 }) => {
   const { user } = useAuth();
-  const { selectedModel } = useModelSettings();
   const [allItems, setAllItems] = useState<any[]>([]);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [currentItem, setCurrentItem] = useState<any>(null);

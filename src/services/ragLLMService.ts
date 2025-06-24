@@ -120,7 +120,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
   }
 
   async generateFeedback(binType: string, itemName: string, language: Language, model?: LLMModel): Promise<RAGResponse> {
-    const selectedModel = model || 'meta-llama/llama-3.3-8b-instruct:free'; // Default fallback
+    const selectedModel = model || 'meta-llama/llama-3.1-8b-instruct:free'; // Default fallback
     console.log(`RAG LLM Service: Generating feedback for "${itemName}" with bin type "${binType}" using model "${selectedModel}"`);
 
     try {
@@ -214,7 +214,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
 
       const message = data.choices?.[0]?.message?.content;
 
-      if (message) {
+      if (message && message.trim()) {
         console.log('RAG LLM Service: Successfully generated LLM response:', message);
         return message.trim();
       } else {
@@ -254,7 +254,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
 
   // Test method to debug OpenRouter API
   async testOpenRouterAPI(model?: LLMModel): Promise<any> {
-    const testModel = model || 'meta-llama/llama-3.3-8b-instruct:free';
+    const testModel = model || 'meta-llama/llama-3.1-8b-instruct:free';
     console.log('RAG LLM Service: Testing OpenRouter API directly with model:', testModel);
 
     if (!this.apiKey) {
@@ -281,9 +281,11 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
       });
 
       console.log('Test API Response status:', response.status);
+      console.log('Test API Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Test API Error details:', errorText);
         return {
           error: `API Error: ${response.status} ${response.statusText}`,
           details: errorText
@@ -291,14 +293,41 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
       }
 
       const data = await response.json();
+      console.log('Test API Success response:', data);
       return { success: true, data };
 
     } catch (error) {
+      console.error('Test API Exception:', error);
       return { error: error.message };
     }
+  }
+
+  // Test all available models
+  async testAllModels(): Promise<any> {
+    const models: LLMModel[] = [
+      'meta-llama/llama-3.1-8b-instruct:free',
+      'mistralai/mistral-7b-instruct:free',
+      'meta-llama/llama-3.2-3b-instruct:free',
+      'qwen/qwen2.5-vl-32b-instruct:free'
+    ];
+
+    const results: any = {};
+
+    for (const model of models) {
+      console.log(`\n=== Testing model: ${model} ===`);
+      results[model] = await this.testOpenRouterAPI(model);
+      console.log(`Result for ${model}:`, results[model]);
+    }
+
+    return results;
   }
 
 }
 
 // Export a singleton instance
 export const ragLLMService = new RAGLLMService();
+
+// Expose for debugging in browser console
+if (typeof window !== 'undefined') {
+  (window as any).ragLLMService = ragLLMService;
+}

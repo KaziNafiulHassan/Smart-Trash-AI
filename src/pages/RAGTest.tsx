@@ -9,7 +9,7 @@ const RAGTest: React.FC = () => {
   const [testResult, setTestResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState<Language>('EN');
-  const [selectedModel, setSelectedModel] = useState<LLMModel>('meta-llama/llama-3.3-8b-instruct:free');
+  const [selectedModel, setSelectedModel] = useState<LLMModel>('meta-llama/llama-3.1-8b-instruct:free');
 
   const testRAGService = async () => {
     setIsLoading(true);
