@@ -1,18 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Language } from '@/types/common';
 import WasteItem from './WasteItem';
-import { 
-  FeedbackPopup, 
-  LevelUpAnimation, 
-  GameHeader, 
-  GameTimer, 
-  GameInstructions, 
-  GameProgress, 
-  GameBinsGrid 
+import {
+  FeedbackPopup,
+  LevelUpAnimation,
+  GameHeader,
+  GameTimer,
+  GameInstructions,
+  GameProgress,
+  GameBinsGrid
 } from '@/features/game';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
+import { useModelSettings } from '@/contexts/ModelSettingsContext';
+import SettingsPanel from './SettingsPanel';
 
 interface GameLevelProps {
   language: Language;
@@ -28,6 +30,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
   onBackToHome
 }) => {
   const { user } = useAuth();
+  const { selectedModel } = useModelSettings();
   const [allItems, setAllItems] = useState<any[]>([]);
   const [currentItemIndex, setCurrentItemIndex] = useState(0);
   const [currentItem, setCurrentItem] = useState<any>(null);
@@ -39,7 +42,9 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [gameData, setGameData] = useState<any>({ wasteItems: [], binCategories: {} });
   const [timer, setTimer] = useState(30);
   const [initialTimer, setInitialTimer] = useState(30);
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
   const [isTimerActive, setIsTimerActive] = useState(false);
+  const [wasTimerActiveBeforeSettings, setWasTimerActiveBeforeSettings] = useState(false);
   const [sortingTimes, setSortingTimes] = useState<number[]>([]);
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false);
@@ -130,6 +135,23 @@ const GameLevel: React.FC<GameLevelProps> = ({
     }
     return () => clearInterval(interval);
   }, [isTimerActive, timer]);
+
+  // Handle timer pausing when settings panel opens/closes
+  useEffect(() => {
+    if (showSettingsPanel) {
+      // Settings panel opened - pause timer if it was active
+      setWasTimerActiveBeforeSettings(isTimerActive);
+      setIsTimerActive(false);
+      console.log('Game: Settings panel opened, timer paused');
+    } else {
+      // Settings panel closed - resume timer if it was active before
+      if (wasTimerActiveBeforeSettings && timer > 0) {
+        setIsTimerActive(true);
+        console.log('Game: Settings panel closed, timer resumed');
+      }
+      setWasTimerActiveBeforeSettings(false);
+    }
+  }, [showSettingsPanel]);
 
   const loadGameData = async () => {
     const data = await dataService.getGameData(language);
@@ -272,6 +294,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
         score={score}
         onBackToHome={onBackToHome}
         onResetLevel={resetLevel}
+        onOpenSettings={() => setShowSettingsPanel(true)}
       />
 
       {/* Timer Bar */}
@@ -332,6 +355,13 @@ const GameLevel: React.FC<GameLevelProps> = ({
           onComplete={handleLevelUpAnimationComplete}
         />
       )}
+
+      {/* Settings Panel */}
+      <SettingsPanel
+        language={language}
+        isOpen={showSettingsPanel}
+        onClose={() => setShowSettingsPanel(false)}
+      />
     </div>
   );
 };

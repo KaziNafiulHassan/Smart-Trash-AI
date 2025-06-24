@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowLeft, Star, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Star, RotateCcw, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
 import LogoutButton from './LogoutButton';
@@ -11,6 +11,7 @@ interface GameHeaderProps {
   score: number;
   onBackToHome: () => void;
   onResetLevel: () => void;
+  onOpenSettings: () => void;
 }
 
 const texts = {
@@ -27,7 +28,8 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   level,
   score,
   onBackToHome,
-  onResetLevel
+  onResetLevel,
+  onOpenSettings
 }) => {
   const t = texts[language];
 
@@ -52,6 +54,12 @@ const GameHeader: React.FC<GameHeaderProps> = ({
 
       <div className="flex items-center space-x-2">
         <ThemeToggle />
+        <Button
+          onClick={onOpenSettings}
+          className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
+        >
+          <Settings className="w-4 h-4 sm:w-6 sm:h-6" />
+        </Button>
         <Button
           onClick={onResetLevel}
           className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"

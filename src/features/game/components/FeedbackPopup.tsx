@@ -4,6 +4,7 @@ import { X, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
 import { useAuth } from '@/hooks/useAuth';
+import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import GraphBox from '@/components/Game/GraphBox';
 import GraphRAGBox from '@/components/Game/GraphRAGBox';
 import { neo4jService } from '@/services/neo4jService';
@@ -38,6 +39,7 @@ const texts = {
 
 const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClose }) => {
   const { user } = useAuth();
+  const { selectedModel } = useModelSettings();
   const t = texts[language];
   const [graphData, setGraphData] = useState<any>(null);
   const [ragMessage, setRagMessage] = useState<string>('');
@@ -62,11 +64,12 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
       console.log('FeedbackPopup: Neo4j data loaded successfully');
 
       // Load RAG message from LLM service
-      console.log('FeedbackPopup: Loading RAG feedback...');
+      console.log('FeedbackPopup: Loading RAG feedback with model:', selectedModel);
       const ragResponse = await ragLLMService.generateFeedback(
         feedback.bin?.id || 'residual',
         feedback.item?.item_name || '',
-        language
+        language,
+        selectedModel
       );
       setRagMessage(ragResponse.message);
       console.log('FeedbackPopup: RAG feedback loaded successfully');

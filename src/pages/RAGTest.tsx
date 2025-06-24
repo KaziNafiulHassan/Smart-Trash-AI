@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ragLLMService } from '@/services/ragLLMService';
 import { Language } from '@/types/common';
+import { AVAILABLE_MODELS, LLMModel } from '@/contexts/ModelSettingsContext';
+import ModelSelection from '@/components/Game/ModelSelection';
 
 const RAGTest: React.FC = () => {
   const [testResult, setTestResult] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState<Language>('EN');
+  const [selectedModel, setSelectedModel] = useState<LLMModel>('meta-llama/llama-3.3-8b-instruct:free');
 
   const testRAGService = async () => {
     setIsLoading(true);
@@ -14,7 +17,7 @@ const RAGTest: React.FC = () => {
     
     try {
       // Test with a common item name
-      const result = await ragLLMService.generateFeedback('paper', 'newspaper', language);
+      const result = await ragLLMService.generateFeedback('paper', 'newspaper', language, selectedModel);
       setTestResult(result);
     } catch (error) {
       setTestResult({ error: error.toString() });
@@ -36,7 +39,7 @@ const RAGTest: React.FC = () => {
 
       const results = [];
       for (const item of testItems) {
-        const result = await ragLLMService.generateFeedback(item.binType, item.itemName, language);
+        const result = await ragLLMService.generateFeedback(item.binType, item.itemName, language, selectedModel);
         results.push({ item: item.itemName, binType: item.binType, response: result });
       }
 
@@ -53,7 +56,7 @@ const RAGTest: React.FC = () => {
     setTestResult(null);
 
     try {
-      const result = await ragLLMService.testOpenRouterAPI();
+      const result = await ragLLMService.testOpenRouterAPI(selectedModel);
       setTestResult({ apiTest: result });
     } catch (error) {
       setTestResult({ error: error.toString() });

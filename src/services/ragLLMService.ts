@@ -1,6 +1,7 @@
 
 import { Language } from '@/types/common';
 import { neo4jService } from './neo4jService';
+import { LLMModel } from '@/contexts/ModelSettingsContext';
 
 interface RAGResponse {
   message: string;
@@ -17,7 +18,6 @@ interface GraphData {
 class RAGLLMService {
   private apiKey: string;
   private baseUrl: string = 'https://openrouter.ai/api/v1/chat/completions';
-  private model: string = 'meta-llama/llama-3.2-3b-instruct:free'; // Updated to working model
   private siteUrl: string;
   private siteName: string;
 
@@ -30,7 +30,6 @@ class RAGLLMService {
     console.log('RAG LLM Service: API Key length:', this.apiKey ? this.apiKey.length : 0);
     console.log('RAG LLM Service: Site URL:', this.siteUrl);
     console.log('RAG LLM Service: Site Name:', this.siteName);
-    console.log('RAG LLM Service: Model:', this.model);
 
     if (!this.apiKey) {
       console.warn('RAG LLM Service: OpenRouter API key not found, will use fallback responses');
@@ -120,8 +119,9 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
     }
   }
 
-  async generateFeedback(binType: string, itemName: string, language: Language): Promise<RAGResponse> {
-    console.log(`RAG LLM Service: Generating feedback for "${itemName}" with bin type "${binType}"`);
+  async generateFeedback(binType: string, itemName: string, language: Language, model?: LLMModel): Promise<RAGResponse> {
+    const selectedModel = model || 'meta-llama/llama-3.3-8b-instruct:free'; // Default fallback
+    console.log(`RAG LLM Service: Generating feedback for "${itemName}" with bin type "${binType}" using model "${selectedModel}"`);
 
     try {
       // First, get the graph data from Neo4j
@@ -135,7 +135,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
       // Generate LLM response using graph data
       if (this.apiKey) {
         console.log('RAG LLM Service: API key available, calling OpenRouter...');
-        const llmResponse = await this.callOpenRouterAPI(itemName, isCorrect, binType, graphData, language);
+        const llmResponse = await this.callOpenRouterAPI(itemName, isCorrect, binType, graphData, language, selectedModel);
         if (llmResponse) {
           console.log('RAG LLM Service: LLM response received, returning it');
           return { message: llmResponse };
@@ -160,12 +160,13 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
     isCorrect: boolean,
     selectedBin: string,
     graphData: GraphData,
-    language: Language
+    language: Language,
+    model: LLMModel
   ): Promise<string | null> {
     try {
       console.log('RAG LLM Service: Calling OpenRouter API...');
       console.log('RAG LLM Service: API URL:', this.baseUrl);
-      console.log('RAG LLM Service: Model:', this.model);
+      console.log('RAG LLM Service: Model:', model);
       console.log('RAG LLM Service: Site URL:', this.siteUrl);
       console.log('RAG LLM Service: API Key (first 10 chars):', this.apiKey.substring(0, 10) + '...');
 
@@ -176,7 +177,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
       console.log('RAG LLM Service: User prompt length:', userPrompt.length);
 
       const requestBody = {
-        model: this.model,
+        model: model,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -252,8 +253,9 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
   }
 
   // Test method to debug OpenRouter API
-  async testOpenRouterAPI(): Promise<any> {
-    console.log('RAG LLM Service: Testing OpenRouter API directly...');
+  async testOpenRouterAPI(model?: LLMModel): Promise<any> {
+    const testModel = model || 'meta-llama/llama-3.3-8b-instruct:free';
+    console.log('RAG LLM Service: Testing OpenRouter API directly with model:', testModel);
 
     if (!this.apiKey) {
       return { error: 'No API key available' };
@@ -269,7 +271,7 @@ Kindly explain why it belongs in the correct bin and provide helpful tips based 
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          model: this.model,
+          model: testModel,
           messages: [
             { role: 'user', content: 'Hello, can you respond with a simple greeting?' }
           ],
