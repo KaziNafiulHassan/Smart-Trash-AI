@@ -39,7 +39,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({ language }) => {
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+      <label className="text-sm font-medium text-gray-900 dark:text-gray-300">
         {t.modelSelection}
       </label>
       
@@ -47,7 +47,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({ language }) => {
         <DropdownMenuTrigger asChild>
           <Button
             variant="outline"
-            className="w-full justify-between bg-white/10 hover:bg-white/20 border-white/30 text-white hover:text-white dark:bg-purple-900/30 dark:hover:bg-purple-800/40 dark:border-purple-400/30 dark:text-purple-200"
+            className="w-full justify-between bg-white hover:bg-gray-50 border-gray-300 text-gray-900 hover:text-gray-900 dark:bg-purple-900/30 dark:hover:bg-purple-800/40 dark:border-purple-400/30 dark:text-purple-200"
           >
             <div className="flex items-center space-x-2">
               <Bot className="h-4 w-4" />
@@ -59,28 +59,28 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({ language }) => {
           </Button>
         </DropdownMenuTrigger>
         
-        <DropdownMenuContent 
-          align="start" 
-          className="w-80 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-white/20 dark:border-purple-400/30"
+        <DropdownMenuContent
+          align="start"
+          className="w-80 bg-white dark:bg-gray-900 backdrop-blur-sm border-gray-200 dark:border-purple-400/30 shadow-lg"
         >
           {AVAILABLE_MODELS.map((model) => (
             <DropdownMenuItem
               key={model.id}
               onClick={() => handleModelSelect(model.id)}
-              className={`cursor-pointer p-3 hover:bg-white/20 dark:hover:bg-purple-800/30 ${
-                selectedModel === model.id 
-                  ? 'bg-blue-50 dark:bg-purple-900/50 border-l-4 border-blue-500 dark:border-cyan-400' 
+              className={`cursor-pointer p-3 hover:bg-gray-100 dark:hover:bg-purple-800/30 ${
+                selectedModel === model.id
+                  ? 'bg-blue-50 dark:bg-purple-900/50 border-l-4 border-blue-500 dark:border-cyan-400'
                   : ''
               }`}
             >
               <div className="flex flex-col space-y-1">
                 <div className="flex items-center space-x-2">
-                  <Bot className="h-4 w-4 text-blue-500 dark:text-cyan-400" />
+                  <Bot className="h-4 w-4 text-blue-600 dark:text-cyan-400" />
                   <span className="font-medium text-gray-900 dark:text-gray-100">
                     {model.name}
                   </span>
                   {selectedModel === model.id && (
-                    <span className="text-xs bg-blue-500 dark:bg-cyan-500 text-white px-2 py-1 rounded-full">
+                    <span className="text-xs bg-blue-600 dark:bg-cyan-500 text-white px-2 py-1 rounded-full">
                       {t.currentModel}
                     </span>
                   )}
@@ -95,7 +95,7 @@ const ModelSelection: React.FC<ModelSelectionProps> = ({ language }) => {
       </DropdownMenu>
       
       {currentModelInfo && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-xs text-gray-600 dark:text-gray-400">
           {currentModelInfo.description}
         </p>
       )}
