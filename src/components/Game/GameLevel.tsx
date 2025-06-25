@@ -47,6 +47,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [startTime, setStartTime] = useState<number | null>(null);
   const [showLevelUpAnimation, setShowLevelUpAnimation] = useState(false);
   const [userAchievements, setUserAchievements] = useState<any[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
 
   const bins = [
     { 
@@ -253,10 +254,10 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
     // Save game session data with timing
     try {
-      const avgSortTime = sortingTimes.length > 0 ? 
+      const avgSortTime = sortingTimes.length > 0 ?
         sortingTimes.reduce((a, b) => a + b, 0) / sortingTimes.length : sortTime;
-      
-      await gameService.saveGameSession(user.id, {
+
+      const sessionId = await gameService.saveGameSession(user.id, {
         level,
         score: isCorrect ? score + 10 : score,
         items_sorted: attempts + 1,
@@ -264,6 +265,11 @@ const GameLevel: React.FC<GameLevelProps> = ({
         accuracy: isCorrect ? 100 : 0,
         time_spent: Math.round(avgSortTime / 1000)
       });
+
+      if (sessionId) {
+        setCurrentSessionId(sessionId);
+        console.log('Game session saved with ID:', sessionId);
+      }
     } catch (error) {
       console.error('Error saving game session:', error);
     }
@@ -339,6 +345,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
         <FeedbackPopup
           feedback={feedbackData}
           language={language}
+          sessionId={currentSessionId}
           onClose={handleFeedbackClose}
         />
       )}

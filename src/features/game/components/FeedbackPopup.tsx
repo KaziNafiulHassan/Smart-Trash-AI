@@ -19,6 +19,7 @@ interface FeedbackPopupProps {
     message: string;
   };
   language: Language;
+  sessionId?: string;
   onClose: () => void;
 }
 
@@ -37,13 +38,25 @@ const texts = {
   }
 };
 
-const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClose }) => {
+const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessionId, onClose }) => {
   const { user } = useAuth();
   const { selectedModel } = useModelSettings();
   const t = texts[language];
   const [graphData, setGraphData] = useState<any>(null);
   const [ragMessage, setRagMessage] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const currentSessionId = sessionId || crypto.randomUUID();
+
+  // Rating state management
+  const [graphRatings, setGraphRatings] = useState<{
+    clarity: number | null;
+    helpfulness: number | null;
+  }>({ clarity: null, helpfulness: null });
+
+  const [ragRatings, setRagRatings] = useState<{
+    clarity: number | null;
+    helpfulness: number | null;
+  }>({ clarity: null, helpfulness: null });
 
   // No longer using Supabase-based feedback messages - only AI Assistant and Waste Information
 
@@ -93,74 +106,73 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
     }
   };
 
-  const handleGraphClarityRating = async (rating: number) => {
+  // Unified rating handlers that save complete ratings
+  const saveCompleteRating = async (
+    feedbackType: 'graph' | 'graphrag',
+    clarityRating: number,
+    helpfulnessRating: number
+  ) => {
     if (!user) return;
 
     try {
-      await feedbackService.saveEnhancedFeedbackRating({
+      const ratingData = {
         user_id: user.id,
-        feedback_type: 'graph',
-        clarity_rating: rating,
-        helpfulness_rating: 0, // Will be updated when helpfulness is rated
-        generated_text: JSON.stringify(graphData),
-        item_id: feedback.item?.id
-      });
+        feedback_type: feedbackType,
+        clarity_rating: clarityRating,
+        helpfulness_rating: helpfulnessRating,
+        session_id: currentSessionId,
+        item_id: feedback.item?.id || feedback.item?.item_name,
+        ...(feedbackType === 'graphrag' && {
+          model_used: selectedModel,
+          generated_text: ragMessage
+        }),
+        ...(feedbackType === 'graph' && {
+          generated_text: JSON.stringify(graphData)
+        })
+      };
+
+      console.log('Saving complete rating:', ratingData);
+      const success = await feedbackService.saveEnhancedFeedbackRating(ratingData);
+
+      if (success) {
+        console.log(`${feedbackType} rating saved successfully`);
+      } else {
+        console.error(`Failed to save ${feedbackType} rating`);
+      }
     } catch (error) {
-      console.error('Error saving graph clarity rating:', error);
+      console.error(`Error saving ${feedbackType} rating:`, error);
     }
   };
 
-  const handleGraphHelpfulnessRating = async (rating: number) => {
-    if (!user) return;
-
-    try {
-      await feedbackService.saveEnhancedFeedbackRating({
-        user_id: user.id,
-        feedback_type: 'graph',
-        clarity_rating: 0, // Will be updated when clarity is rated
-        helpfulness_rating: rating,
-        generated_text: JSON.stringify(graphData),
-        item_id: feedback.item?.id
-      });
-    } catch (error) {
-      console.error('Error saving graph helpfulness rating:', error);
-    }
+  const handleGraphClarityRating = (rating: number) => {
+    setGraphRatings(prev => ({ ...prev, clarity: rating }));
   };
 
-  const handleRAGClarityRating = async (rating: number) => {
-    if (!user) return;
-
-    try {
-      await feedbackService.saveEnhancedFeedbackRating({
-        user_id: user.id,
-        feedback_type: 'graphrag',
-        clarity_rating: rating,
-        helpfulness_rating: 0, // Will be updated when helpfulness is rated
-        model_used: selectedModel,
-        generated_text: ragMessage,
-        item_id: feedback.item?.id
-      });
-    } catch (error) {
-      console.error('Error saving RAG clarity rating:', error);
-    }
+  const handleGraphHelpfulnessRating = (rating: number) => {
+    setGraphRatings(prev => ({ ...prev, helpfulness: rating }));
   };
 
-  const handleRAGHelpfulnessRating = async (rating: number) => {
-    if (!user) return;
+  const handleRAGClarityRating = (rating: number) => {
+    setRagRatings(prev => ({ ...prev, clarity: rating }));
+  };
 
-    try {
-      await feedbackService.saveEnhancedFeedbackRating({
-        user_id: user.id,
-        feedback_type: 'graphrag',
-        clarity_rating: 0, // Will be updated when clarity is rated
-        helpfulness_rating: rating,
-        model_used: selectedModel,
-        generated_text: ragMessage,
-        item_id: feedback.item?.id
-      });
-    } catch (error) {
-      console.error('Error saving RAG helpfulness rating:', error);
+  const handleRAGHelpfulnessRating = (rating: number) => {
+    setRagRatings(prev => ({ ...prev, helpfulness: rating }));
+  };
+
+  // Save ratings when popup closes
+  const handleClose = async () => {
+    // Save graph ratings if both are provided
+    if (graphRatings.clarity !== null && graphRatings.helpfulness !== null) {
+      await saveCompleteRating('graph', graphRatings.clarity, graphRatings.helpfulness);
     }
+
+    // Save RAG ratings if both are provided
+    if (ragRatings.clarity !== null && ragRatings.helpfulness !== null) {
+      await saveCompleteRating('graphrag', ragRatings.clarity, ragRatings.helpfulness);
+    }
+
+    onClose();
   };
 
   return (
@@ -236,10 +248,10 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
         </div>
 
         <Button
-          onClick={onClose}
+          onClick={handleClose}
           className={`w-full py-3 text-lg font-semibold rounded-xl transition-all duration-200 ${
-            feedback.correct 
-              ? 'bg-green-500 hover:bg-green-600 text-white' 
+            feedback.correct
+              ? 'bg-green-500 hover:bg-green-600 text-white'
               : 'bg-red-500 hover:bg-red-600 text-white'
           }`}
         >

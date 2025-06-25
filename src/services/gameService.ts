@@ -59,18 +59,22 @@ export const gameService = {
     }
   },
 
-  async saveGameSession(userId: string, session: GameSession) {
-    const { error } = await supabase
+  async saveGameSession(userId: string, session: GameSession): Promise<string | null> {
+    const { data, error } = await supabase
       .from('game_sessions')
       .insert({
         user_id: userId,
         ...session
-      });
+      })
+      .select('id')
+      .single();
 
     if (error) {
       console.error('Error saving game session:', error);
       throw error;
     }
+
+    return data?.id || null;
   },
 
   async getWasteItems() {
