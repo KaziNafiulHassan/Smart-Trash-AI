@@ -177,7 +177,7 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
+      <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 sm:p-8 max-w-lg sm:max-w-2xl lg:max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
         <div className="text-center mb-6">
           <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
             feedback.correct ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
@@ -216,34 +216,38 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
         </div>
 
         {/* Additional Information Boxes */}
-        <div className="space-y-4 mb-6">
+        <div className="mb-6">
           {isLoading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
               <p className="text-gray-600 dark:text-gray-400 text-sm">{t.loading}</p>
             </div>
           ) : (
-            <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* GraphRAG Box - AI Assistant (now appears first) */}
               {ragMessage && (
-                <GraphRAGBox
-                  message={ragMessage}
-                  language={language}
-                  onClarityRating={handleRAGClarityRating}
-                  onHelpfulnessRating={handleRAGHelpfulnessRating}
-                />
+                <div className="lg:col-span-1">
+                  <GraphRAGBox
+                    message={ragMessage}
+                    language={language}
+                    onClarityRating={handleRAGClarityRating}
+                    onHelpfulnessRating={handleRAGHelpfulnessRating}
+                  />
+                </div>
               )}
 
               {/* Graph Box - Waste Information (now appears second) */}
               {graphData && (
-                <GraphBox
-                  data={graphData}
-                  language={language}
-                  onClarityRating={handleGraphClarityRating}
-                  onHelpfulnessRating={handleGraphHelpfulnessRating}
-                />
+                <div className="lg:col-span-1">
+                  <GraphBox
+                    data={graphData}
+                    language={language}
+                    onClarityRating={handleGraphClarityRating}
+                    onHelpfulnessRating={handleGraphHelpfulnessRating}
+                  />
+                </div>
               )}
-            </>
+            </div>
           )}
         </div>
 

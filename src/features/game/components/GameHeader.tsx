@@ -1,9 +1,8 @@
 import React from 'react';
-import { ArrowLeft, Star, RotateCcw, Settings } from 'lucide-react';
+import { ArrowLeft, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
-import LogoutButton from './LogoutButton';
-import { ThemeToggle } from '@/shared/components/ui';
+import GameSettingsDropdown from '@/components/Game/GameSettingsDropdown';
 
 interface GameHeaderProps {
   language: Language;
@@ -53,20 +52,11 @@ const GameHeader: React.FC<GameHeaderProps> = ({
       </div>
 
       <div className="flex items-center space-x-2">
-        <ThemeToggle />
-        <Button
-          onClick={onOpenSettings}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
-        >
-          <Settings className="w-4 h-4 sm:w-6 sm:h-6" />
-        </Button>
-        <Button
-          onClick={onResetLevel}
-          className="p-2 bg-white/20 hover:bg-white/30 rounded-full dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border"
-        >
-          <RotateCcw className="w-4 h-4 sm:w-6 sm:h-6" />
-        </Button>
-        <LogoutButton className="bg-white/20 hover:bg-white/30 text-white dark:bg-purple-900/50 dark:hover:bg-purple-800/50 dark:neon-border" />
+        <GameSettingsDropdown
+          language={language}
+          onResetLevel={onResetLevel}
+          onOpenModelSettings={onOpenSettings}
+        />
       </div>
     </div>
   );
