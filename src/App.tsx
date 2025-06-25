@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Neo4jTest from "./pages/Neo4jTest";
 import RAGTest from "./pages/RAGTest";
+import FeedbackTest from "./pages/FeedbackTest";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/neo4j-test" element={<Neo4jTest />} />
               <Route path="/rag-test" element={<RAGTest />} />
+              <Route path="/feedback-test" element={<FeedbackTest />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

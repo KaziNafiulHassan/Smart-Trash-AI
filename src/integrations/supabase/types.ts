@@ -77,28 +77,40 @@ export type Database = {
       }
       feedback_ratings: {
         Row: {
+          clarity_rating: number | null
           created_at: string
           feedback_type: string
+          generated_text: string | null
+          helpfulness_rating: number | null
           id: string
           item_id: string | null
+          model_used: string | null
           rating: number
           session_id: string | null
           user_id: string
         }
         Insert: {
+          clarity_rating?: number | null
           created_at?: string
           feedback_type: string
+          generated_text?: string | null
+          helpfulness_rating?: number | null
           id?: string
           item_id?: string | null
+          model_used?: string | null
           rating: number
           session_id?: string | null
           user_id: string
         }
         Update: {
+          clarity_rating?: number | null
           created_at?: string
           feedback_type?: string
+          generated_text?: string | null
+          helpfulness_rating?: number | null
           id?: string
           item_id?: string | null
+          model_used?: string | null
           rating?: number
           session_id?: string | null
           user_id?: string

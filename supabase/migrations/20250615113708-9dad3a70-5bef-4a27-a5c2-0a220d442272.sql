@@ -5,6 +5,10 @@ CREATE TABLE IF NOT EXISTS public.feedback_ratings (
   user_id UUID REFERENCES auth.users NOT NULL,
   feedback_type TEXT NOT NULL CHECK (feedback_type IN ('graph', 'graphrag')),
   rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  clarity_rating INTEGER CHECK (clarity_rating >= 1 AND clarity_rating <= 5),
+  helpfulness_rating INTEGER CHECK (helpfulness_rating >= 1 AND helpfulness_rating <= 5),
+  model_used TEXT,
+  generated_text TEXT,
   item_id TEXT,
   session_id UUID,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()

@@ -93,33 +93,73 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
     }
   };
 
-  const handleGraphRating = async (rating: number) => {
+  const handleGraphClarityRating = async (rating: number) => {
     if (!user) return;
-    
+
     try {
-      await feedbackService.saveFeedbackRating({
+      await feedbackService.saveEnhancedFeedbackRating({
         user_id: user.id,
         feedback_type: 'graph',
-        rating,
+        clarity_rating: rating,
+        helpfulness_rating: 0, // Will be updated when helpfulness is rated
+        generated_text: JSON.stringify(graphData),
         item_id: feedback.item?.id
       });
     } catch (error) {
-      console.error('Error saving graph rating:', error);
+      console.error('Error saving graph clarity rating:', error);
     }
   };
 
-  const handleRAGRating = async (rating: number) => {
+  const handleGraphHelpfulnessRating = async (rating: number) => {
     if (!user) return;
-    
+
     try {
-      await feedbackService.saveFeedbackRating({
+      await feedbackService.saveEnhancedFeedbackRating({
         user_id: user.id,
-        feedback_type: 'graphrag',
-        rating,
+        feedback_type: 'graph',
+        clarity_rating: 0, // Will be updated when clarity is rated
+        helpfulness_rating: rating,
+        generated_text: JSON.stringify(graphData),
         item_id: feedback.item?.id
       });
     } catch (error) {
-      console.error('Error saving RAG rating:', error);
+      console.error('Error saving graph helpfulness rating:', error);
+    }
+  };
+
+  const handleRAGClarityRating = async (rating: number) => {
+    if (!user) return;
+
+    try {
+      await feedbackService.saveEnhancedFeedbackRating({
+        user_id: user.id,
+        feedback_type: 'graphrag',
+        clarity_rating: rating,
+        helpfulness_rating: 0, // Will be updated when helpfulness is rated
+        model_used: selectedModel,
+        generated_text: ragMessage,
+        item_id: feedback.item?.id
+      });
+    } catch (error) {
+      console.error('Error saving RAG clarity rating:', error);
+    }
+  };
+
+  const handleRAGHelpfulnessRating = async (rating: number) => {
+    if (!user) return;
+
+    try {
+      await feedbackService.saveEnhancedFeedbackRating({
+        user_id: user.id,
+        feedback_type: 'graphrag',
+        clarity_rating: 0, // Will be updated when clarity is rated
+        helpfulness_rating: rating,
+        model_used: selectedModel,
+        generated_text: ragMessage,
+        item_id: feedback.item?.id
+      });
+    } catch (error) {
+      console.error('Error saving RAG helpfulness rating:', error);
     }
   };
 
@@ -177,7 +217,8 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
                 <GraphRAGBox
                   message={ragMessage}
                   language={language}
-                  onRating={handleRAGRating}
+                  onClarityRating={handleRAGClarityRating}
+                  onHelpfulnessRating={handleRAGHelpfulnessRating}
                 />
               )}
 
@@ -186,7 +227,8 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, onClo
                 <GraphBox
                   data={graphData}
                   language={language}
-                  onRating={handleGraphRating}
+                  onClarityRating={handleGraphClarityRating}
+                  onHelpfulnessRating={handleGraphHelpfulnessRating}
                 />
               )}
             </>

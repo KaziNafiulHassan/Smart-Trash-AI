@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Database, MapPin } from 'lucide-react';
-import StarRating from './StarRating';
+import DualStarRating from './DualStarRating';
 import { Language } from '@/types/common';
 
 interface GraphData {
@@ -15,7 +15,8 @@ interface GraphData {
 interface GraphBoxProps {
   data: GraphData;
   language: Language;
-  onRating: (rating: number) => void;
+  onClarityRating: (rating: number) => void;
+  onHelpfulnessRating: (rating: number) => void;
 }
 
 const texts = {
@@ -39,7 +40,7 @@ const texts = {
   }
 };
 
-const GraphBox: React.FC<GraphBoxProps> = ({ data, language, onRating }) => {
+const GraphBox: React.FC<GraphBoxProps> = ({ data, language, onClarityRating, onHelpfulnessRating }) => {
   const t = texts[language];
 
   return (
@@ -80,8 +81,12 @@ const GraphBox: React.FC<GraphBoxProps> = ({ data, language, onRating }) => {
       </div>
       
       <div className="mt-4 pt-3 border-t border-blue-200 dark:border-blue-700">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{t.rateHelpfulness}:</p>
-        <StarRating onRating={onRating} size={18} />
+        <DualStarRating
+          onClarityRating={onClarityRating}
+          onHelpfulnessRating={onHelpfulnessRating}
+          language={language}
+          size={18}
+        />
       </div>
     </div>
   );

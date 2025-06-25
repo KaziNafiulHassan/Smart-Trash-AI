@@ -1,13 +1,14 @@
 
 import React from 'react';
 import { Brain, Sparkles } from 'lucide-react';
-import StarRating from './StarRating';
+import DualStarRating from './DualStarRating';
 import { Language } from '@/types/common';
 
 interface GraphRAGBoxProps {
   message: string;
   language: Language;
-  onRating: (rating: number) => void;
+  onClarityRating: (rating: number) => void;
+  onHelpfulnessRating: (rating: number) => void;
 }
 
 const texts = {
@@ -21,7 +22,7 @@ const texts = {
   }
 };
 
-const GraphRAGBox: React.FC<GraphRAGBoxProps> = ({ message, language, onRating }) => {
+const GraphRAGBox: React.FC<GraphRAGBoxProps> = ({ message, language, onClarityRating, onHelpfulnessRating }) => {
   const t = texts[language];
 
   return (
@@ -41,8 +42,12 @@ const GraphRAGBox: React.FC<GraphRAGBoxProps> = ({ message, language, onRating }
       </div>
       
       <div className="mt-4 pt-3 border-t border-purple-200 dark:border-purple-700">
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">{t.rateHelpfulness}:</p>
-        <StarRating onRating={onRating} size={18} />
+        <DualStarRating
+          onClarityRating={onClarityRating}
+          onHelpfulnessRating={onHelpfulnessRating}
+          language={language}
+          size={18}
+        />
       </div>
     </div>
   );
