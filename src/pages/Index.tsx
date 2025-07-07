@@ -15,6 +15,7 @@ import AIWasteSorter from '@/components/AIWasteSorter';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
 import { userStudyService } from '@/services/userStudyService';
+import { supabase } from '@/integrations/supabase/client';
 import { Language, Screen } from '@/types/common';
 
 type ExtendedScreen = Screen | 'backendArchitecture' | 'aiSorting' | 'registration' | 'structuredFeedbackTest' | 'streamingTest' | 'comprehensiveTest' | 'feedbackTypeTest';
@@ -65,8 +66,26 @@ const Index = () => {
   useEffect(() => {
     if (user) {
       console.log('User authenticated, checking registration status...', user.id);
-      checkUserRegistrationStatus();
+
+      // Check if we have cached the user's registration status
+      const cachedStatus = localStorage.getItem(`ecoSort_userRegistered_${user.id}`);
+
+      if (cachedStatus === 'true') {
+        console.log('User registration status cached as complete, proceeding to game');
+        loadUserProgress();
+        setCurrentScreen('gameHome');
+      } else {
+        console.log('No cached status found, checking registration...');
+        checkUserRegistrationStatus();
+      }
     } else if (!loading) {
+      // User signed out, clear any cached registration status
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('ecoSort_userRegistered_')) {
+          localStorage.removeItem(key);
+        }
+      });
       setCurrentScreen('auth');
     }
   }, [user, loading]);
@@ -75,28 +94,66 @@ const Index = () => {
     if (!user) return;
 
     try {
+      console.log('Checking registration status for user:', user.id);
+
+      // First, ensure user setup exists
+      await profileService.ensureUserSetup(user.id, user.user_metadata?.name, language);
+
       // Check if user has completed registration
       const isRegistrationComplete = await userStudyService.checkRegistrationStatus(user.id);
-      
-      if (!isRegistrationComplete) {
+      console.log('Registration complete status:', isRegistrationComplete);
+
+      // For users with usernames (new auth system), they should be considered complete
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username, registration_completed, created_at')
+        .eq('id', user.id)
+        .single();
+
+      console.log('User profile data:', profile);
+
+      // If user has a username but registration_completed is false, update it
+      if (profile?.username && !profile.registration_completed) {
+        console.log('User has username but registration not marked complete, fixing...');
+        await supabase
+          .from('profiles')
+          .update({ registration_completed: true })
+          .eq('id', user.id);
+
+        // Update local check
+        const updatedStatus = true;
+        console.log('Updated registration status to:', updatedStatus);
+      }
+
+      // Final check - if still not complete, show registration
+      const finalStatus = profile?.registration_completed || (profile?.username ? true : false);
+
+      if (!finalStatus) {
         console.log('User registration not complete, showing registration form');
         setCurrentScreen('registration');
         return;
       }
 
+      // Cache the registration status to avoid repeated checks
+      localStorage.setItem(`ecoSort_userRegistered_${user.id}`, 'true');
+      console.log('Registration status cached for user:', user.id);
+
       // Load user progress
       await loadUserProgress();
-      
-      // Check if user needs onboarding
+
+      // Check if user needs onboarding (only for very new users)
       const userCreatedAt = new Date(user.created_at);
       const now = new Date();
       const timeDiff = now.getTime() - userCreatedAt.getTime();
-      const isNewUser = timeDiff < 60000; // Less than 1 minute old
-      
-      if (isNewUser) {
+      const isVeryNewUser = timeDiff < 300000; // Less than 5 minutes old
+
+      if (isVeryNewUser && !localStorage.getItem('ecoSort_onboardingShown')) {
+        console.log('New user detected, showing onboarding');
+        localStorage.setItem('ecoSort_onboardingShown', 'true');
         setShowOnboarding(true);
         setCurrentScreen('onboarding');
       } else {
+        console.log('Proceeding to game home');
         setCurrentScreen('gameHome');
       }
     } catch (error) {
@@ -131,12 +188,16 @@ const Index = () => {
     if (!user) return;
 
     console.log('Registration data received:', userData);
-    
+
     try {
       const success = await profileService.completeUserRegistration(user.id, userData.studyData || userData);
-      
+
       if (success) {
         console.log('User registration completed successfully');
+
+        // Cache the registration status
+        localStorage.setItem(`ecoSort_userRegistered_${user.id}`, 'true');
+
         // Reload user progress and proceed to game
         await loadUserProgress();
         setCurrentScreen('gameHome');

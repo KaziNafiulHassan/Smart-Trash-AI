@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, User, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, User, Lock, UserCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
-import { profileService } from '@/services/profileService';
+import { usernameAuthService } from '@/services/usernameAuthService';
 import { Language } from '@/types/common';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 import LanguageToggle from '@/components/ui/LanguageToggle';
@@ -19,7 +18,7 @@ const texts = {
     subtitle: 'Learn waste sorting through fun gameplay',
     signIn: 'Sign In',
     signUp: 'Sign Up',
-    email: 'Email',
+    username: 'Username',
     password: 'Password',
     name: 'Full Name',
     alreadyAccount: 'Already have an account?',
@@ -27,16 +26,17 @@ const texts = {
     signInButton: 'Sign In',
     signUpButton: 'Create Account',
     loading: 'Loading...',
-    emailPlaceholder: 'Enter your email',
+    usernamePlaceholder: 'Enter your username',
     passwordPlaceholder: 'Enter your password',
-    namePlaceholder: 'Enter your full name'
+    namePlaceholder: 'Enter your full name',
+    usernameHelp: '3-30 characters, letters, numbers, and underscores only'
   },
   DE: {
     welcome: 'Willkommen bei Smart Trash AI',
     subtitle: 'Lerne Mülltrennung durch spielerisches Lernen',
     signIn: 'Anmelden',
     signUp: 'Registrieren',
-    email: 'E-Mail',
+    username: 'Benutzername',
     password: 'Passwort',
     name: 'Vollständiger Name',
     alreadyAccount: 'Bereits ein Konto?',
@@ -44,15 +44,16 @@ const texts = {
     signInButton: 'Anmelden',
     signUpButton: 'Konto erstellen',
     loading: 'Laden...',
-    emailPlaceholder: 'E-Mail eingeben',
+    usernamePlaceholder: 'Benutzername eingeben',
     passwordPlaceholder: 'Passwort eingeben',
-    namePlaceholder: 'Vollständigen Namen eingeben'
+    namePlaceholder: 'Vollständigen Namen eingeben',
+    usernameHelp: '3-30 Zeichen, nur Buchstaben, Zahlen und Unterstriche'
   }
 };
 
 const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth, onLanguageChange }) => {
   const [isSignUp, setIsSignUp] = useState(false);
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -68,46 +69,38 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth, onLanguageCha
 
     try {
       if (isSignUp) {
-        console.log('Signing up with:', { email, name, language });
-        
-        const { data, error } = await supabase.auth.signUp({
-          email,
+        console.log('Signing up with username:', { username, name, language });
+
+        const result = await usernameAuthService.signUpWithUsername({
+          username,
           password,
-          options: {
-            data: {
-              name,
-              language
-            }
-          }
+          name,
+          language
         });
 
-        if (error) throw error;
-        
-        if (data.user) {
-          console.log('User signed up:', data.user);
-          
-          // Ensure user profile and progress are created
-          await profileService.ensureUserSetup(data.user.id, name, language);
-          
-          onAuth(data.user);
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        if (result.user) {
+          console.log('User signed up:', result.user);
+          onAuth(result.user);
         }
       } else {
-        console.log('Signing in with:', email);
-        
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
+        console.log('Signing in with username:', username);
+
+        const result = await usernameAuthService.signInWithUsername({
+          username,
           password
         });
 
-        if (error) throw error;
-        
-        if (data.user) {
-          console.log('User signed in:', data.user);
-          
-          // Ensure user setup exists (fallback for existing users)
-          await profileService.ensureUserSetup(data.user.id, data.user.user_metadata?.name, language);
-          
-          onAuth(data.user);
+        if (!result.success) {
+          throw new Error(result.error);
+        }
+
+        if (result.user) {
+          console.log('User signed in:', result.user);
+          onAuth(result.user);
         }
       }
     } catch (error: any) {
@@ -160,7 +153,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth, onLanguageCha
           <form onSubmit={handleAuth} className="space-y-4">
             {isSignUp && (
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-purple-300" />
+                <UserCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-purple-300" />
                 <input
                   type="text"
                   value={name}
@@ -173,16 +166,24 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ language, onAuth, onLanguageCha
             )}
 
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-purple-300" />
+              <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-purple-300" />
               <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t.emailPlaceholder}
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                placeholder={t.usernamePlaceholder}
                 className="w-full pl-12 pr-4 py-3 bg-white/20 dark:bg-gray-700/50 dark:border dark:border-purple-400/30 rounded-xl text-white dark:text-gray-100 placeholder-gray-300 dark:placeholder-purple-300 focus:ring-2 focus:ring-blue-500 dark:focus:ring-purple-500"
                 required
+                pattern="[a-z0-9_]{3,30}"
+                title={t.usernameHelp}
               />
             </div>
+
+            {isSignUp && (
+              <div className="text-xs text-gray-300 dark:text-purple-300 -mt-2">
+                {t.usernameHelp}
+              </div>
+            )}
 
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-purple-300" />
