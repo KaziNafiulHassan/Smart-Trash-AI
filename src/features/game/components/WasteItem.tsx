@@ -16,11 +16,26 @@ const WasteItem: React.FC<WasteItemProps> = ({
       e.preventDefault();
       return;
     }
-    
+
+    // Set drag data and effect
     e.dataTransfer.setData('text/plain', JSON.stringify(item));
+    e.dataTransfer.effectAllowed = 'move';
+
+    // Add visual feedback during drag
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '0.7';
+    target.style.transform = 'scale(0.95)';
+
     if (onDragStart) {
       onDragStart(item);
     }
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    // Reset visual feedback
+    const target = e.currentTarget as HTMLElement;
+    target.style.opacity = '1';
+    target.style.transform = 'scale(1)';
   };
 
   return (
@@ -30,6 +45,7 @@ const WasteItem: React.FC<WasteItemProps> = ({
       }`}
       draggable={isDraggable}
       onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
     >
       <div className="aspect-square w-full mb-3 bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden flex items-center justify-center">
         {item.image_url ? (

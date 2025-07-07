@@ -14,6 +14,7 @@ import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
 import { useAuth } from '@/hooks/useAuth';
 import SettingsPanel from './SettingsPanel';
+import GameAnimation from '@/components/Game/GameAnimations';
 
 interface GameLevelProps {
   language: Language;
@@ -40,7 +41,15 @@ const GameLevel: React.FC<GameLevelProps> = ({
   const [gameData, setGameData] = useState<any>({ wasteItems: [], binCategories: {} });
   const [timer, setTimer] = useState(30);
   const [initialTimer, setInitialTimer] = useState(30);
+  const [usedItemIds, setUsedItemIds] = useState<Set<string>>(new Set());
+  const [sessionId] = useState<string>(() => {
+    // Try to restore session ID from localStorage, or create new one
+    const savedSessionId = localStorage.getItem('ecoSort_gameSessionId');
+    return savedSessionId || crypto.randomUUID();
+  });
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showAnimation, setShowAnimation] = useState(false);
+  const [animationType, setAnimationType] = useState<'correct' | 'incorrect'>('correct');
   const [isTimerActive, setIsTimerActive] = useState(false);
   const [wasTimerActiveBeforeSettings, setWasTimerActiveBeforeSettings] = useState(false);
   const [sortingTimes, setSortingTimes] = useState<number[]>([]);
@@ -152,6 +161,75 @@ const GameLevel: React.FC<GameLevelProps> = ({
     }
   }, [showSettingsPanel]);
 
+  // Save game state to localStorage
+  useEffect(() => {
+    if (currentItem && allItems.length > 0) {
+      const gameState = {
+        sessionId,
+        level,
+        score,
+        attempts,
+        currentItemIndex,
+        timer,
+        initialTimer,
+        allItems: allItems.map(item => item.id), // Only save IDs to reduce storage
+        usedItemIds: Array.from(usedItemIds),
+        timestamp: Date.now()
+      };
+      localStorage.setItem('ecoSort_gameState', JSON.stringify(gameState));
+    }
+  }, [sessionId, level, score, attempts, currentItemIndex, timer, initialTimer, allItems, usedItemIds, currentItem]);
+
+  // Restore game state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem('ecoSort_gameState');
+    if (savedState && gameData.wasteItems.length > 0) {
+      try {
+        const gameState = JSON.parse(savedState);
+
+        // Only restore if it's recent (within 1 hour) and for the same level
+        const isRecent = Date.now() - gameState.timestamp < 3600000; // 1 hour
+        const isSameLevel = gameState.level === level;
+
+        if (isRecent && isSameLevel && gameState.allItems) {
+          // Restore items from IDs
+          const restoredItems = gameState.allItems
+            .map((id: string) => gameData.wasteItems.find((item: any) => item.id === id))
+            .filter(Boolean);
+
+          if (restoredItems.length > 0) {
+            setAllItems(restoredItems);
+            setCurrentItemIndex(gameState.currentItemIndex || 0);
+            setCurrentItem(restoredItems[gameState.currentItemIndex || 0]);
+            setScore(gameState.score || 0);
+            setAttempts(gameState.attempts || 0);
+            setTimer(gameState.timer || getTimerForLevel(level));
+            setInitialTimer(gameState.initialTimer || getTimerForLevel(level));
+            setUsedItemIds(new Set(gameState.usedItemIds || []));
+
+            console.log('GameLevel: Restored game state from localStorage', {
+              level: gameState.level,
+              score: gameState.score,
+              currentItemIndex: gameState.currentItemIndex,
+              sessionId: gameState.sessionId
+            });
+            return; // Skip generating new items
+          }
+        }
+      } catch (error) {
+        console.warn('GameLevel: Failed to restore game state:', error);
+      }
+    }
+
+    // Generate new items if no valid saved state
+    generateLevelItems();
+  }, [gameData.wasteItems, level]);
+
+  // Save session ID to localStorage
+  useEffect(() => {
+    localStorage.setItem('ecoSort_gameSessionId', sessionId);
+  }, [sessionId]);
+
   const loadGameData = async () => {
     const data = await dataService.getGameData(language);
     setGameData(data);
@@ -159,15 +237,39 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
   const generateLevelItems = () => {
     if (gameData.wasteItems.length === 0) return;
-    
-    const shuffled = [...gameData.wasteItems].sort(() => 0.5 - Math.random());
+
+    // Filter out already used items for this session
+    const availableItems = gameData.wasteItems.filter(item => !usedItemIds.has(item.id));
+
+    // If we've used all items, reset the used items set (allow reuse but with better shuffling)
+    const itemsToUse = availableItems.length >= 5 ? availableItems : gameData.wasteItems;
+
+    // Use Fisher-Yates shuffle for better randomization
+    const shuffled = [...itemsToUse];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
     const selected = shuffled.slice(0, 5);
+
+    // Track used items for this session
+    const newUsedIds = new Set(usedItemIds);
+    selected.forEach(item => newUsedIds.add(item.id));
+    setUsedItemIds(newUsedIds);
+
     setAllItems(selected);
     setCurrentItemIndex(0);
     setCurrentItem(selected[0]);
     setScore(0);
     setAttempts(0);
     setSortingTimes([]);
+
+    console.log(`GameLevel: Generated ${selected.length} unique items for session ${sessionId}`, {
+      selectedIds: selected.map(item => item.id),
+      totalUsedInSession: newUsedIds.size,
+      availableItems: availableItems.length
+    });
   };
 
   const handleTimeOut = () => {
@@ -237,16 +339,23 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
     setAttempts(prev => prev + 1);
 
-    // Create minimal feedback data - AI Assistant and Waste Information will provide the feedback
-    const feedback = {
-      correct: isCorrect,
-      item: currentItem,
-      bin: bin,
-      message: '' // No longer using Supabase-based feedback message
-    };
+    // Show animation first
+    setAnimationType(isCorrect ? 'correct' : 'incorrect');
+    setShowAnimation(true);
 
-    setFeedbackData(feedback);
-    setShowFeedback(true);
+    // Delay feedback popup to show after animation
+    setTimeout(() => {
+      // Create minimal feedback data - AI Assistant and Waste Information will provide the feedback
+      const feedback = {
+        correct: isCorrect,
+        item: currentItem,
+        bin: bin,
+        message: '' // No longer using Supabase-based feedback message
+      };
+
+      setFeedbackData(feedback);
+      setShowFeedback(true);
+    }, 2000); // Show feedback after animation completes
 
     if (isCorrect) {
       setScore(prev => prev + 10);
@@ -284,9 +393,27 @@ const GameLevel: React.FC<GameLevelProps> = ({
   };
 
   const resetLevel = () => {
+    // Clear saved game state
+    localStorage.removeItem('ecoSort_gameState');
+
+    // Reset used items tracking for a fresh start
+    setUsedItemIds(new Set());
     generateLevelItems();
+    setTimer(getTimerForLevel(level));
+    setInitialTimer(getTimerForLevel(level));
     setIsTimerActive(false);
     setStartTime(null);
+    console.log(`GameLevel: Reset level ${level} with fresh item pool for session ${sessionId}`);
+  };
+
+  const handleBackToHome = () => {
+    // Clear saved game state when going back to home
+    localStorage.removeItem('ecoSort_gameState');
+    onBackToHome();
+  };
+
+  const handleAnimationEnd = () => {
+    setShowAnimation(false);
   };
 
   return (
@@ -296,7 +423,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
         language={language}
         level={level}
         score={score}
-        onBackToHome={onBackToHome}
+        onBackToHome={handleBackToHome}
         onResetLevel={resetLevel}
         onOpenSettings={() => setShowSettingsPanel(true)}
       />
@@ -360,6 +487,13 @@ const GameLevel: React.FC<GameLevelProps> = ({
           onComplete={handleLevelUpAnimationComplete}
         />
       )}
+
+      {/* Game Animation */}
+      <GameAnimation
+        type={animationType}
+        isVisible={showAnimation}
+        onAnimationEnd={handleAnimationEnd}
+      />
 
       {/* Settings Panel */}
       <SettingsPanel

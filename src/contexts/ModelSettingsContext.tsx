@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export type LLMModel =
+  | 'meta-llama/llama-4-maverick-17b-128e-instruct:free'
   | 'meta-llama/llama-3.1-8b-instruct:free'
   | 'mistralai/mistral-7b-instruct:free'
   | 'meta-llama/llama-3.2-3b-instruct:free'
@@ -14,14 +15,19 @@ export interface ModelInfo {
 
 export const AVAILABLE_MODELS: ModelInfo[] = [
   {
+    id: 'mistralai/mistral-7b-instruct:free',
+    name: 'Mistral 7B Instruct',
+    description: 'Fast and efficient model with excellent conversational abilities'
+  },
+  {
+    id: 'meta-llama/llama-4-maverick-17b-128e-instruct:free',
+    name: 'Llama 4 Maverick 17B Instruct',
+    description: 'Advanced Llama 4 model with enhanced capabilities and extended context'
+  },
+  {
     id: 'meta-llama/llama-3.1-8b-instruct:free',
     name: 'Llama 3.1 8B Instruct',
     description: 'Powerful Llama model with excellent instruction following'
-  },
-  {
-    id: 'mistralai/mistral-7b-instruct:free',
-    name: 'Mistral 7B Instruct',
-    description: 'Efficient instruction-following model with balanced performance'
   },
   {
     id: 'meta-llama/llama-3.2-3b-instruct:free',
@@ -58,9 +64,9 @@ interface ModelSettingsProviderProps {
 export const ModelSettingsProvider: React.FC<ModelSettingsProviderProps> = ({ children }) => {
   const [selectedModel, setSelectedModelState] = useState<LLMModel>(() => {
     const savedModel = localStorage.getItem('selectedLLMModel') as LLMModel;
-    return savedModel && AVAILABLE_MODELS.some(m => m.id === savedModel) 
-      ? savedModel 
-      : 'meta-llama/llama-3.1-8b-instruct:free'; // Default to Llama 3.1
+    return savedModel && AVAILABLE_MODELS.some(m => m.id === savedModel)
+      ? savedModel
+      : 'mistralai/mistral-7b-instruct:free'; // Default to Mistral 7B
   });
 
   useEffect(() => {

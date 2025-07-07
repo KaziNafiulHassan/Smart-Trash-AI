@@ -13,6 +13,7 @@ import { Language } from '@/types/common';
 import { useAuth } from '@/hooks/useAuth';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
+import { useFeedbackSettings, FEEDBACK_TYPE_OPTIONS } from '@/contexts/FeedbackSettingsContext';
 import { LLMModel } from '@/contexts/ModelSettingsContext';
 
 interface GameSettingsDropdownProps {
@@ -25,6 +26,7 @@ const texts = {
   EN: {
     settings: 'Settings',
     aiModel: 'AI Model',
+    feedbackType: 'Feedback Type',
     theme: 'Theme',
     resetLevel: 'Reset Level',
     logout: 'Logout',
@@ -35,6 +37,7 @@ const texts = {
   DE: {
     settings: 'Einstellungen',
     aiModel: 'KI-Modell',
+    feedbackType: 'Feedback-Typ',
     theme: 'Design',
     resetLevel: 'Level zurücksetzen',
     logout: 'Abmelden',
@@ -45,8 +48,9 @@ const texts = {
 };
 
 const modelDisplayNames = {
-  'meta-llama/llama-3.1-8b-instruct:free': 'Llama 3.1 8B',
   'mistralai/mistral-7b-instruct:free': 'Mistral 7B',
+  'meta-llama/llama-4-maverick-17b-128e-instruct:free': 'Llama 4 Maverick 17B',
+  'meta-llama/llama-3.1-8b-instruct:free': 'Llama 3.1 8B',
   'meta-llama/llama-3.2-3b-instruct:free': 'Llama 3.2 3B',
   'qwen/qwen2.5-vl-32b-instruct:free': 'Qwen 2.5 VL 32B'
 };
@@ -60,7 +64,15 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
   const { signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { selectedModel } = useModelSettings();
+  const { feedbackType, setFeedbackType } = useFeedbackSettings();
   const [isOpen, setIsOpen] = useState(false);
+
+  // Debug function to test feedback type changes
+  const handleFeedbackTypeChange = (newType: string) => {
+    console.log('Attempting to change feedback type from', feedbackType, 'to', newType);
+    setFeedbackType(newType as any);
+    console.log('Feedback type change completed');
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -113,7 +125,41 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
           </div>
         </DropdownMenuItem>
 
-        <DropdownMenuItem 
+        <div className="px-2 py-1.5 border-b border-gray-200 dark:border-gray-600">
+          <div className="flex items-center space-x-2 mb-2">
+            <Bot className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{t.feedbackType}</span>
+          </div>
+          <div className="space-y-1">
+            {FEEDBACK_TYPE_OPTIONS.map(option => (
+              <button
+                key={option.id}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleFeedbackTypeChange(option.id);
+                  setIsOpen(false); // Close dropdown after selection
+                }}
+                className={`w-full text-left px-2 py-1 text-xs rounded transition-colors ${
+                  feedbackType === option.id
+                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-medium'
+                    : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span>{option.name}</span>
+                  {feedbackType === option.id && (
+                    <span className="text-blue-600 dark:text-blue-400">✓</span>
+                  )}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {option.description}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <DropdownMenuItem
           onClick={handleThemeToggle}
           className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
         >

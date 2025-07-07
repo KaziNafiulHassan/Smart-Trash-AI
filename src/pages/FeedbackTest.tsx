@@ -53,7 +53,7 @@ const FeedbackTest: React.FC = () => {
         feedback_type: 'graphrag',
         clarity_rating: 4,
         helpfulness_rating: 5,
-        model_used: 'meta-llama/llama-3.1-8b-instruct:free',
+        model_used: 'meta-llama/llama-4-maverick-17b-128e-instruct:free',
         generated_text: 'This is a test feedback message from the AI assistant.',
         item_id: 'test-item-123'
       });

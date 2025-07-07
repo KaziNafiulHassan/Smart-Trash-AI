@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
 import { useAuth } from '@/hooks/useAuth';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
+import { useFeedbackSettings } from '@/contexts/FeedbackSettingsContext';
 import GraphBox from '@/components/Game/GraphBox';
-import GraphRAGBox from '@/components/Game/GraphRAGBox';
+import StructuredFeedbackBox from '@/components/Game/StructuredFeedbackBox';
 import { neo4jService } from '@/services/neo4jService';
 import { ragLLMService } from '@/services/ragLLMService';
 import { feedbackService } from '@/services/feedbackService';
@@ -41,19 +42,16 @@ const texts = {
 const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessionId, onClose }) => {
   const { user } = useAuth();
   const { selectedModel } = useModelSettings();
+  const { feedbackType } = useFeedbackSettings();
   const t = texts[language];
   const [graphData, setGraphData] = useState<any>(null);
   const [ragMessage, setRagMessage] = useState<string>('');
+  const [structuredFeedback, setStructuredFeedback] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const currentSessionId = sessionId || crypto.randomUUID();
 
-  // Rating state management
-  const [graphRatings, setGraphRatings] = useState<{
-    clarity: number | null;
-    helpfulness: number | null;
-  }>({ clarity: null, helpfulness: null });
-
-  const [ragRatings, setRagRatings] = useState<{
+  // Rating state management - single state since only one feedback type is shown
+  const [currentRatings, setCurrentRatings] = useState<{
     clarity: number | null;
     helpfulness: number | null;
   }>({ clarity: null, helpfulness: null });
@@ -62,11 +60,13 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
 
   useEffect(() => {
     loadAdditionalData();
-  }, [feedback.item, feedback.bin]);
+  }, [feedback.item, feedback.bin, feedbackType, selectedModel]);
 
   const loadAdditionalData = async () => {
     setIsLoading(true);
     try {
+      console.log('FeedbackPopup: Loading data for feedback type:', feedbackType);
+
       // Load graph data from Neo4j service
       console.log('FeedbackPopup: Loading Neo4j data...');
       const graphInfo = await neo4jService.getWasteItemInfo(
@@ -76,16 +76,27 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
       setGraphData(graphInfo);
       console.log('FeedbackPopup: Neo4j data loaded successfully');
 
-      // Load RAG message from LLM service
-      console.log('FeedbackPopup: Loading RAG feedback with model:', selectedModel);
-      const ragResponse = await ragLLMService.generateFeedback(
-        feedback.bin?.id || 'residual',
-        feedback.item?.item_name || '',
-        language,
-        selectedModel
-      );
-      setRagMessage(ragResponse.message);
-      console.log('FeedbackPopup: RAG feedback loaded successfully');
+      // Only load RAG message if AI feedback is selected
+      if (feedbackType === 'ai') {
+        console.log('FeedbackPopup: Loading RAG feedback with model:', selectedModel);
+        const ragResponse = await ragLLMService.generateFeedback(
+          feedback.bin?.id || 'residual',
+          feedback.item?.item_name || '',
+          language,
+          selectedModel
+        );
+        setRagMessage(ragResponse.message);
+        setStructuredFeedback(ragResponse.structured);
+        console.log('FeedbackPopup: RAG feedback loaded successfully', {
+          hasStructured: !!ragResponse.structured,
+          message: ragResponse.message
+        });
+      } else {
+        // Clear AI feedback when not selected
+        setRagMessage('');
+        setStructuredFeedback(null);
+        console.log('FeedbackPopup: Skipped RAG feedback (waste-info mode)');
+      }
     } catch (error) {
       console.error('FeedbackPopup: Error loading additional data:', error);
       // Set error messages for display
@@ -106,9 +117,8 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
     }
   };
 
-  // Unified rating handlers that save complete ratings
-  const saveCompleteRating = async (
-    feedbackType: 'graph' | 'graphrag',
+  // Save rating for the currently selected feedback type
+  const saveCurrentFeedbackRating = async (
     clarityRating: number,
     helpfulnessRating: number
   ) => {
@@ -117,59 +127,50 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
     try {
       const ratingData = {
         user_id: user.id,
-        feedback_type: feedbackType,
+        feedback_type: feedbackType, // 'ai' or 'waste-info'
         clarity_rating: clarityRating,
         helpfulness_rating: helpfulnessRating,
         session_id: currentSessionId,
         item_id: feedback.item?.id || feedback.item?.item_name,
-        ...(feedbackType === 'graphrag' && {
+        item_name: feedback.item?.item_name || 'Unknown Item',
+        selected_bin: feedback.bin?.name || 'Unknown Bin',
+        is_correct: feedback.isCorrect,
+        created_at: new Date().toISOString(),
+        ...(feedbackType === 'ai' && {
           model_used: selectedModel,
-          generated_text: ragMessage
+          generated_text: structuredFeedback ? JSON.stringify(structuredFeedback) : ragMessage
         }),
-        ...(feedbackType === 'graph' && {
+        ...(feedbackType === 'waste-info' && {
           generated_text: JSON.stringify(graphData)
         })
       };
 
-      console.log('Saving complete rating:', ratingData);
+      console.log('Saving rating for feedback type:', feedbackType, ratingData);
       const success = await feedbackService.saveEnhancedFeedbackRating(ratingData);
 
       if (success) {
-        console.log(`${feedbackType} rating saved successfully`);
+        console.log(`${feedbackType} feedback rating saved successfully`);
       } else {
-        console.error(`Failed to save ${feedbackType} rating`);
+        console.error(`Failed to save ${feedbackType} feedback rating`);
       }
     } catch (error) {
-      console.error(`Error saving ${feedbackType} rating:`, error);
+      console.error(`Error saving ${feedbackType} feedback rating:`, error);
     }
   };
 
-  const handleGraphClarityRating = (rating: number) => {
-    setGraphRatings(prev => ({ ...prev, clarity: rating }));
+  const handleClarityRating = (rating: number) => {
+    setCurrentRatings(prev => ({ ...prev, clarity: rating }));
   };
 
-  const handleGraphHelpfulnessRating = (rating: number) => {
-    setGraphRatings(prev => ({ ...prev, helpfulness: rating }));
-  };
-
-  const handleRAGClarityRating = (rating: number) => {
-    setRagRatings(prev => ({ ...prev, clarity: rating }));
-  };
-
-  const handleRAGHelpfulnessRating = (rating: number) => {
-    setRagRatings(prev => ({ ...prev, helpfulness: rating }));
+  const handleHelpfulnessRating = (rating: number) => {
+    setCurrentRatings(prev => ({ ...prev, helpfulness: rating }));
   };
 
   // Save ratings when popup closes
   const handleClose = async () => {
-    // Save graph ratings if both are provided
-    if (graphRatings.clarity !== null && graphRatings.helpfulness !== null) {
-      await saveCompleteRating('graph', graphRatings.clarity, graphRatings.helpfulness);
-    }
-
-    // Save RAG ratings if both are provided
-    if (ragRatings.clarity !== null && ragRatings.helpfulness !== null) {
-      await saveCompleteRating('graphrag', ragRatings.clarity, ragRatings.helpfulness);
+    // Save current feedback ratings if both are provided
+    if (currentRatings.clarity !== null && currentRatings.helpfulness !== null) {
+      await saveCurrentFeedbackRating(currentRatings.clarity, currentRatings.helpfulness);
     }
 
     onClose();
@@ -223,27 +224,28 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
               <p className="text-gray-600 dark:text-gray-400 text-sm">{t.loading}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* GraphRAG Box - AI Assistant (now appears first) */}
-              {ragMessage && (
-                <div className="lg:col-span-1">
-                  <GraphRAGBox
-                    message={ragMessage}
+            <div className="w-full">
+              {/* Show AI Feedback when selected */}
+              {feedbackType === 'ai' && (structuredFeedback || ragMessage) && (
+                <div className="w-full">
+                  <StructuredFeedbackBox
+                    structuredFeedback={structuredFeedback}
+                    fallbackMessage={ragMessage}
                     language={language}
-                    onClarityRating={handleRAGClarityRating}
-                    onHelpfulnessRating={handleRAGHelpfulnessRating}
+                    onClarityRating={handleClarityRating}
+                    onHelpfulnessRating={handleHelpfulnessRating}
                   />
                 </div>
               )}
 
-              {/* Graph Box - Waste Information (now appears second) */}
-              {graphData && (
-                <div className="lg:col-span-1">
+              {/* Show Waste Information when selected */}
+              {feedbackType === 'waste-info' && graphData && (
+                <div className="w-full">
                   <GraphBox
                     data={graphData}
                     language={language}
-                    onClarityRating={handleGraphClarityRating}
-                    onHelpfulnessRating={handleGraphHelpfulnessRating}
+                    onClarityRating={handleClarityRating}
+                    onHelpfulnessRating={handleHelpfulnessRating}
                   />
                 </div>
               )}

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ModelSettingsProvider } from "@/contexts/ModelSettingsContext";
+import { FeedbackSettingsProvider } from "@/contexts/FeedbackSettingsContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Neo4jTest from "./pages/Neo4jTest";
@@ -18,7 +19,8 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <ModelSettingsProvider>
-        <TooltipProvider>
+        <FeedbackSettingsProvider>
+          <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -31,7 +33,8 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+          </TooltipProvider>
+        </FeedbackSettingsProvider>
       </ModelSettingsProvider>
     </ThemeProvider>
   </QueryClientProvider>

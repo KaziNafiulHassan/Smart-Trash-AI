@@ -7,18 +7,36 @@ import GameHome from '@/components/Game/GameHome';
 import GameLevel from '@/components/Game/GameLevel';
 import ProfileDashboard from '@/components/Profile/ProfileDashboard';
 import BackendArchitecture from '@/pages/BackendArchitecture';
+import StructuredFeedbackTest from '@/pages/StructuredFeedbackTest';
+import StreamingTest from '@/pages/StreamingTest';
+import ComprehensiveTest from '@/pages/ComprehensiveTest';
+import FeedbackTypeTest from '@/pages/FeedbackTypeTest';
 import AIWasteSorter from '@/components/AIWasteSorter';
 import { gameService } from '@/services/gameService';
 import { profileService } from '@/services/profileService';
 import { userStudyService } from '@/services/userStudyService';
 import { Language, Screen } from '@/types/common';
 
-type ExtendedScreen = Screen | 'backendArchitecture' | 'aiSorting' | 'registration';
+type ExtendedScreen = Screen | 'backendArchitecture' | 'aiSorting' | 'registration' | 'structuredFeedbackTest' | 'streamingTest' | 'comprehensiveTest' | 'feedbackTypeTest';
 
 const Index = () => {
   const { user, loading } = useAuth();
-  const [currentScreen, setCurrentScreen] = useState<ExtendedScreen>('auth');
-  const [language, setLanguage] = useState<Language>('EN');
+  const [currentScreen, setCurrentScreen] = useState<ExtendedScreen>(() => {
+    // Restore screen state from localStorage, but only for authenticated users
+    if (typeof window !== 'undefined') {
+      const savedScreen = localStorage.getItem('ecoSort_currentScreen');
+      return (savedScreen as ExtendedScreen) || 'auth';
+    }
+    return 'auth';
+  });
+  const [language, setLanguage] = useState<Language>(() => {
+    // Restore language from localStorage
+    if (typeof window !== 'undefined') {
+      const savedLanguage = localStorage.getItem('ecoSort_language');
+      return (savedLanguage as Language) || 'EN';
+    }
+    return 'EN';
+  });
   const [gameProgress, setGameProgress] = useState({
     level: 1,
     total_correct: 0,
@@ -29,6 +47,20 @@ const Index = () => {
     best_streak: 0
   });
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Save current screen to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined' && user) {
+      localStorage.setItem('ecoSort_currentScreen', currentScreen);
+    }
+  }, [currentScreen, user]);
+
+  // Save language to localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('ecoSort_language', language);
+    }
+  }, [language]);
 
   useEffect(() => {
     if (user) {
@@ -241,6 +273,14 @@ const Index = () => {
             onBack={handleBackToHome}
           />
         );
+      case 'structuredFeedbackTest':
+        return <StructuredFeedbackTest />;
+      case 'streamingTest':
+        return <StreamingTest />;
+      case 'comprehensiveTest':
+        return <ComprehensiveTest />;
+      case 'feedbackTypeTest':
+        return <FeedbackTypeTest />;
       default:
         return <AuthScreen language={language} onAuth={handleAuth} onLanguageChange={handleLanguageChange} />;
     }

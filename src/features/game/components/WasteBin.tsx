@@ -70,13 +70,35 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
   const handleDragOver = (e: React.DragEvent) => {
     if (isDropTarget) {
       e.preventDefault();
+      e.stopPropagation();
+      // Set the drop effect to indicate this is a valid drop target
+      e.dataTransfer.dropEffect = 'move';
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (isDropTarget) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (isDropTarget) {
+      e.preventDefault();
+      e.stopPropagation();
     }
   };
 
   const handleDrop = (e: React.DragEvent) => {
     if (isDropTarget && onDrop) {
       e.preventDefault();
-      onDrop(bin.id);
+      e.stopPropagation();
+
+      // Add a small delay to ensure smooth animation
+      setTimeout(() => {
+        onDrop(bin.id);
+      }, 50);
     }
   };
 
@@ -112,6 +134,8 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
         isDropTarget ? 'border-2 border-dashed border-white/50 scale-105' : ''
       } transition-all duration-200 hover:scale-105 cursor-pointer`}
       onDragOver={handleDragOver}
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <div className="flex flex-col items-center justify-center h-full">
