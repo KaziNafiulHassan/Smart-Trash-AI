@@ -82,6 +82,12 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
       setIsOpen(false);
     } catch (error) {
       console.error('GameSettingsDropdown: Error during logout:', error);
+
+      // Even if logout fails, close the dropdown and let the auth state handle the rest
+      setIsOpen(false);
+
+      // Don't throw the error to prevent UI issues
+      console.log('GameSettingsDropdown: Continuing despite logout error');
     }
   };
 
