@@ -125,11 +125,14 @@ const Index = () => {
         console.log('Updated registration status to:', updatedStatus);
       }
 
-      // Final check - if still not complete, show registration
-      const finalStatus = profile?.registration_completed || (profile?.username ? true : false);
+      // Final check - registration is only complete if explicitly marked as such
+      // Having a username alone is not sufficient for research purposes
+      const finalStatus = profile?.registration_completed === true;
 
       if (!finalStatus) {
         console.log('User registration not complete, showing registration form');
+        // Clear any cached registration status for this user
+        localStorage.removeItem(`ecoSort_userRegistered_${user.id}`);
         setCurrentScreen('registration');
         return;
       }

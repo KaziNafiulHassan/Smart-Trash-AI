@@ -1,9 +1,39 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Frontend feedback types (what the UI uses)
+export type FrontendFeedbackType = 'ai' | 'waste-info';
+
+// Database feedback types (what the database expects)
+export type DatabaseFeedbackType = 'graphrag' | 'graph';
+
+// Mapping function to convert frontend types to database types
+export const mapFeedbackType = (frontendType: FrontendFeedbackType): DatabaseFeedbackType => {
+  switch (frontendType) {
+    case 'ai':
+      return 'graphrag'; // AI feedback maps to graphrag
+    case 'waste-info':
+      return 'graph'; // Waste info feedback maps to graph
+    default:
+      return 'graph'; // Default fallback
+  }
+};
+
+// Reverse mapping function to convert database types back to frontend types
+export const mapDatabaseToFrontendType = (databaseType: DatabaseFeedbackType): FrontendFeedbackType => {
+  switch (databaseType) {
+    case 'graphrag':
+      return 'ai'; // graphrag maps back to AI feedback
+    case 'graph':
+      return 'waste-info'; // graph maps back to waste info feedback
+    default:
+      return 'waste-info'; // Default fallback
+  }
+};
+
 export interface FeedbackRating {
   user_id: string;
-  feedback_type: 'graph' | 'graphrag';
+  feedback_type: DatabaseFeedbackType;
   rating: number;
   clarity_rating?: number;
   helpfulness_rating?: number;
@@ -15,13 +45,18 @@ export interface FeedbackRating {
 
 export interface EnhancedFeedbackRating {
   user_id: string;
-  feedback_type: 'graph' | 'graphrag';
+  feedback_type: FrontendFeedbackType; // Accept frontend types
   clarity_rating: number;
   helpfulness_rating: number;
   model_used?: string;
   generated_text?: string;
   item_id?: string;
   session_id?: string;
+  // Additional fields that might be passed from the frontend
+  item_name?: string;
+  selected_bin?: string;
+  is_correct?: boolean;
+  created_at?: string;
 }
 
 export const feedbackService = {
@@ -45,11 +80,21 @@ export const feedbackService = {
 
   async saveEnhancedFeedbackRating(rating: EnhancedFeedbackRating): Promise<boolean> {
     try {
+      // Map frontend feedback type to database feedback type
+      const mappedFeedbackType = mapFeedbackType(rating.feedback_type);
+
       // For enhanced ratings, we don't use the old 'rating' field
       const dataToInsert = {
         ...rating,
+        feedback_type: mappedFeedbackType, // Use mapped database type
         rating: 5 // Set a default value for the required rating field
       };
+
+      console.log('Saving enhanced feedback rating with mapped type:', {
+        original: rating.feedback_type,
+        mapped: mappedFeedbackType,
+        data: dataToInsert
+      });
 
       const { error } = await supabase
         .from('feedback_ratings')
@@ -57,6 +102,7 @@ export const feedbackService = {
 
       if (error) {
         console.error('Error saving enhanced feedback rating:', error);
+        console.error('Error details:', error.message, error.details);
         return false;
       }
 
@@ -81,10 +127,10 @@ export const feedbackService = {
         return [];
       }
 
-      // Type cast the feedback_type to ensure it matches our interface
+      // Type cast the feedback_type and map to frontend types
       return (data || []).map(item => ({
         ...item,
-        feedback_type: item.feedback_type as 'graph' | 'graphrag'
+        feedback_type: item.feedback_type as DatabaseFeedbackType
       }));
     } catch (error) {
       console.error('Error in getUserFeedbackRatings:', error);
@@ -107,12 +153,12 @@ export const feedbackService = {
         return [];
       }
 
-      // Type cast and filter for enhanced ratings
+      // Type cast and filter for enhanced ratings, mapping database types back to frontend types
       return (data || [])
         .filter(item => item.clarity_rating !== null && item.helpfulness_rating !== null)
         .map(item => ({
           user_id: item.user_id,
-          feedback_type: item.feedback_type as 'graph' | 'graphrag',
+          feedback_type: mapDatabaseToFrontendType(item.feedback_type as DatabaseFeedbackType),
           clarity_rating: item.clarity_rating!,
           helpfulness_rating: item.helpfulness_rating!,
           model_used: item.model_used,

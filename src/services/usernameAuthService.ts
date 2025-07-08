@@ -145,7 +145,7 @@ export const usernameAuthService = {
             language: signUpData.language,
             username: uniqueUsername,
             avatar_emoji: '🌱',
-            registration_completed: true  // Mark as complete for new users
+            registration_completed: false  // Users still need to complete study data form
           })
           .select()
           .single();
