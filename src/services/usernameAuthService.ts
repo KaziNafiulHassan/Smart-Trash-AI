@@ -77,6 +77,27 @@ export const usernameAuthService = {
   },
 
   /**
+   * Generate a unique username by adding numbers if needed
+   */
+  async generateUniqueUsername(baseUsername: string): Promise<string> {
+    let username = baseUsername.toLowerCase();
+    let counter = 1;
+
+    while (!(await this.isUsernameAvailable(username))) {
+      username = `${baseUsername.toLowerCase()}_${counter}`;
+      counter++;
+
+      // Prevent infinite loop
+      if (counter > 999) {
+        username = `${baseUsername.toLowerCase()}_${Date.now()}`;
+        break;
+      }
+    }
+
+    return username;
+  },
+
+  /**
    * Sign up with username and password
    */
   async signUpWithUsername(signUpData: UsernameSignUpData): Promise<UsernameAuthResult> {
@@ -87,14 +108,12 @@ export const usernameAuthService = {
         return { success: false, error: validation.error };
       }
 
-      // Check username availability
-      const isAvailable = await this.isUsernameAvailable(signUpData.username);
-      if (!isAvailable) {
-        return { success: false, error: 'Username is already taken' };
-      }
+      // Generate unique username (handles conflicts automatically)
+      const uniqueUsername = await this.generateUniqueUsername(signUpData.username);
+      console.log('Generated unique username:', uniqueUsername);
 
-      // Generate dummy email for Supabase Auth
-      const dummyEmail = this.generateDummyEmail(signUpData.username);
+      // Generate dummy email for Supabase Auth using unique username
+      const dummyEmail = this.generateDummyEmail(uniqueUsername);
 
       // Sign up with Supabase Auth using dummy email
       const { data, error } = await supabase.auth.signUp({
@@ -104,7 +123,7 @@ export const usernameAuthService = {
           data: {
             name: signUpData.name,
             language: signUpData.language,
-            username: signUpData.username.toLowerCase()
+            username: uniqueUsername
           }
         }
       });
@@ -115,17 +134,30 @@ export const usernameAuthService = {
       }
 
       if (data.user) {
-        // Create user profile with username and mark registration as complete
-        await profileService.createUserProfile(data.user.id, signUpData.name, signUpData.language);
+        // Create user profile with unique username directly (single operation)
+        console.log('Creating user profile with username:', uniqueUsername);
 
-        // Update profile with username and mark registration as complete
-        await supabase
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .update({
-            username: signUpData.username.toLowerCase(),
+          .insert({
+            id: data.user.id,
+            name: signUpData.name,
+            language: signUpData.language,
+            username: uniqueUsername,
+            avatar_emoji: '🌱',
             registration_completed: true  // Mark as complete for new users
           })
-          .eq('id', data.user.id);
+          .select()
+          .single();
+
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          // Clean up auth user if profile creation fails
+          await supabase.auth.admin.deleteUser(data.user.id);
+          return { success: false, error: 'Failed to create user profile' };
+        }
+
+        console.log('User profile created successfully:', profileData);
 
         // Create user progress
         await profileService.createUserProgress(data.user.id);
