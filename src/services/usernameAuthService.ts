@@ -152,8 +152,8 @@ export const usernameAuthService = {
 
         if (profileError) {
           console.error('Error creating user profile:', profileError);
-          // Clean up auth user if profile creation fails
-          await supabase.auth.admin.deleteUser(data.user.id);
+          // Note: Cannot clean up auth user with client-side code (requires admin privileges)
+          // The auth user will remain but without a profile, which is handled elsewhere
           return { success: false, error: 'Failed to create user profile' };
         }
 
@@ -213,21 +213,9 @@ export const usernameAuthService = {
           userMetadata?.language || 'EN'
         );
 
-        // For existing users, check if they have registration_completed set
-        // If not, set it to true (they're already in the system)
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('registration_completed')
-          .eq('id', data.user.id)
-          .single();
-
-        if (profile && !profile.registration_completed) {
-          console.log('Marking existing user registration as complete');
-          await supabase
-            .from('profiles')
-            .update({ registration_completed: true })
-            .eq('id', data.user.id);
-        }
+        // Note: We no longer automatically mark users as registration_completed
+        // All users must complete the study data form for research compliance
+        // The registration status will be handled by the main application flow
 
         return { success: true, user: data.user };
       }

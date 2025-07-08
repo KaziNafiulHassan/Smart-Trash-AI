@@ -75,8 +75,14 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
   };
 
   const handleLogout = async () => {
-    await signOut();
-    setIsOpen(false);
+    try {
+      console.log('GameSettingsDropdown: Starting logout process...');
+      await signOut();
+      console.log('GameSettingsDropdown: Logout completed successfully');
+      setIsOpen(false);
+    } catch (error) {
+      console.error('GameSettingsDropdown: Error during logout:', error);
+    }
   };
 
   const handleThemeToggle = () => {

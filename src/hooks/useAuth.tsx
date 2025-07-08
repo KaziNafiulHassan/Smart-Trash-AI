@@ -29,7 +29,18 @@ export const useAuth = () => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    try {
+      console.log('useAuth: Starting signOut process...');
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('useAuth: Error during signOut:', error);
+        throw error;
+      }
+      console.log('useAuth: SignOut completed successfully');
+    } catch (error) {
+      console.error('useAuth: SignOut failed:', error);
+      throw error;
+    }
   };
 
   return {

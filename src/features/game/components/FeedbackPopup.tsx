@@ -125,6 +125,7 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
     if (!user) return;
 
     try {
+      // Only include fields that exist in the feedback_ratings table
       const ratingData = {
         user_id: user.id,
         feedback_type: feedbackType, // 'ai' or 'waste-info'
@@ -132,10 +133,6 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
         helpfulness_rating: helpfulnessRating,
         session_id: currentSessionId,
         item_id: feedback.item?.id || feedback.item?.item_name,
-        item_name: feedback.item?.item_name || 'Unknown Item',
-        selected_bin: feedback.bin?.name || 'Unknown Bin',
-        is_correct: feedback.isCorrect,
-        created_at: new Date().toISOString(),
         ...(feedbackType === 'ai' && {
           model_used: selectedModel,
           generated_text: structuredFeedback ? JSON.stringify(structuredFeedback) : ragMessage
