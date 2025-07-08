@@ -12,6 +12,7 @@ import {
 } from '@/features/game';
 import { dataService } from '@/services/dataService';
 import { gameService } from '@/services/gameService';
+import { gameSoundService } from '@/services/gameSoundService';
 import { useAuth } from '@/hooks/useAuth';
 import SettingsPanel from './SettingsPanel';
 import GameAnimation from '@/components/Game/GameAnimations';
@@ -48,6 +49,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
     return savedSessionId || crypto.randomUUID();
   });
   const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
   const [showAnimation, setShowAnimation] = useState(false);
   const [animationType, setAnimationType] = useState<'correct' | 'incorrect'>('correct');
   const [isTimerActive, setIsTimerActive] = useState(false);
@@ -109,6 +111,10 @@ const GameLevel: React.FC<GameLevelProps> = ({
 
   useEffect(() => {
     loadGameData();
+    // Initialize audio context and play game start sound
+    gameSoundService.resumeAudioContext().then(() => {
+      gameSoundService.playSound('game-start');
+    });
   }, [language]);
 
   useEffect(() => {
@@ -137,6 +143,12 @@ const GameLevel: React.FC<GameLevelProps> = ({
             handleTimeOut();
             return 0;
           }
+          // Play warning sound when timer is low
+          if (prev === 6) {
+            gameSoundService.playSound('timer-warning');
+          } else if (prev <= 3) {
+            gameSoundService.playSound('timer-tick');
+          }
           return prev - 1;
         });
       }, 1000);
@@ -144,22 +156,26 @@ const GameLevel: React.FC<GameLevelProps> = ({
     return () => clearInterval(interval);
   }, [isTimerActive, timer]);
 
-  // Handle timer pausing when settings panel opens/closes
+  // Handle timer pausing when settings panel or sound settings opens/closes
   useEffect(() => {
-    if (showSettingsPanel) {
-      // Settings panel opened - pause timer if it was active
-      setWasTimerActiveBeforeSettings(isTimerActive);
-      setIsTimerActive(false);
-      console.log('Game: Settings panel opened, timer paused');
+    const anySettingsOpen = showSettingsPanel || showSoundSettings;
+
+    if (anySettingsOpen) {
+      // Settings opened - pause timer if it was active
+      if (isTimerActive && !wasTimerActiveBeforeSettings) {
+        setWasTimerActiveBeforeSettings(true);
+        setIsTimerActive(false);
+        console.log('Game: Settings opened, timer paused');
+      }
     } else {
-      // Settings panel closed - resume timer if it was active before
+      // All settings closed - resume timer if it was active before
       if (wasTimerActiveBeforeSettings && timer > 0) {
         setIsTimerActive(true);
-        console.log('Game: Settings panel closed, timer resumed');
+        setWasTimerActiveBeforeSettings(false);
+        console.log('Game: Settings closed, timer resumed');
       }
-      setWasTimerActiveBeforeSettings(false);
     }
-  }, [showSettingsPanel]);
+  }, [showSettingsPanel, showSoundSettings, isTimerActive, wasTimerActiveBeforeSettings]);
 
   // Save game state to localStorage
   useEffect(() => {
@@ -298,6 +314,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
       setIsTimerActive(true);
     } else {
       // Level complete - show level up animation
+      gameSoundService.playSound('level-complete');
       setShowLevelUpAnimation(true);
       loadUserAchievements();
     }
@@ -338,6 +355,9 @@ const GameLevel: React.FC<GameLevelProps> = ({
     const isCorrect = currentItem.bin_type === binId;
 
     setAttempts(prev => prev + 1);
+
+    // Play drop sound effect
+    gameSoundService.playSound(isCorrect ? 'drop-correct' : 'drop-incorrect');
 
     // Show animation first
     setAnimationType(isCorrect ? 'correct' : 'incorrect');
@@ -392,6 +412,10 @@ const GameLevel: React.FC<GameLevelProps> = ({
     moveToNextItem();
   };
 
+  const handleSoundSettingsChange = (isOpen: boolean) => {
+    setShowSoundSettings(isOpen);
+  };
+
   const resetLevel = () => {
     // Clear saved game state
     localStorage.removeItem('ecoSort_gameState');
@@ -426,6 +450,7 @@ const GameLevel: React.FC<GameLevelProps> = ({
         onBackToHome={handleBackToHome}
         onResetLevel={resetLevel}
         onOpenSettings={() => setShowSettingsPanel(true)}
+        onSoundSettingsChange={handleSoundSettingsChange}
       />
 
       {/* Timer Bar */}

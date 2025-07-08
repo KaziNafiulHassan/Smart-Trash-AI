@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, XCircle, Sparkles, Heart, Star } from 'lucide-react';
+import { gameSoundService } from '@/services/gameSoundService';
 
 interface GameAnimationProps {
   type: 'correct' | 'incorrect';
@@ -14,6 +15,11 @@ const GameAnimation: React.FC<GameAnimationProps> = ({ type, isVisible, onAnimat
     if (!isVisible) {
       setAnimationPhase('enter');
       return;
+    }
+
+    // Play sparkle sound for correct answers
+    if (type === 'correct') {
+      gameSoundService.playSound('sparkle');
     }
 
     const timer1 = setTimeout(() => setAnimationPhase('celebrate'), 100);

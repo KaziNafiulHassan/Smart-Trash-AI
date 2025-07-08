@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Star, Trophy, Award, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Language } from '@/types/common';
+import { gameSoundService } from '@/services/gameSoundService';
 
 interface LevelUpAnimationProps {
   language: Language;
@@ -45,15 +46,25 @@ const LevelUpAnimation: React.FC<LevelUpAnimationProps> = ({
   const t = texts[language];
 
   useEffect(() => {
+    // Play victory sound and confetti
+    gameSoundService.playSound('confetti');
+
+    // Check for achievements and play achievement sound
+    if (achievements && achievements.length > 0) {
+      setTimeout(() => {
+        gameSoundService.playSound('achievement-unlock');
+      }, 1000);
+    }
+
     // Stagger the animations
     const timer1 = setTimeout(() => setShowContent(true), 500);
     const timer2 = setTimeout(() => setShowAchievements(true), 1500);
-    
+
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
     };
-  }, []);
+  }, [achievements]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">

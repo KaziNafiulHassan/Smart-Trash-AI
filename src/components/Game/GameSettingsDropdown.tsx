@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Settings, LogOut, Palette, Bot, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, LogOut, Palette, Bot, RotateCcw, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,11 +15,14 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useModelSettings } from '@/contexts/ModelSettingsContext';
 import { useFeedbackSettings, FEEDBACK_TYPE_OPTIONS } from '@/contexts/FeedbackSettingsContext';
 import { LLMModel } from '@/contexts/ModelSettingsContext';
+import SoundSettings from './SoundSettings';
+import { gameSoundService } from '@/services/gameSoundService';
 
 interface GameSettingsDropdownProps {
   language: Language;
   onResetLevel: () => void;
   onOpenModelSettings: () => void;
+  onSoundSettingsChange?: (isOpen: boolean) => void;
 }
 
 const texts = {
@@ -28,6 +31,7 @@ const texts = {
     aiModel: 'AI Model',
     feedbackType: 'Feedback Type',
     theme: 'Theme',
+    sound: 'Sound',
     resetLevel: 'Reset Level',
     logout: 'Logout',
     light: 'Light',
@@ -39,6 +43,7 @@ const texts = {
     aiModel: 'KI-Modell',
     feedbackType: 'Feedback-Typ',
     theme: 'Design',
+    sound: 'Sound',
     resetLevel: 'Level zurücksetzen',
     logout: 'Abmelden',
     light: 'Hell',
@@ -58,7 +63,8 @@ const modelDisplayNames = {
 const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
   language,
   onResetLevel,
-  onOpenModelSettings
+  onOpenModelSettings,
+  onSoundSettingsChange
 }) => {
   const t = texts[language];
   const { signOut } = useAuth();
@@ -66,6 +72,14 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
   const { selectedModel } = useModelSettings();
   const { feedbackType, setFeedbackType } = useFeedbackSettings();
   const [isOpen, setIsOpen] = useState(false);
+  const [showSoundSettings, setShowSoundSettings] = useState(false);
+
+  // Notify parent when sound settings state changes
+  useEffect(() => {
+    if (onSoundSettingsChange) {
+      onSoundSettingsChange(showSoundSettings);
+    }
+  }, [showSoundSettings, onSoundSettingsChange]);
 
   // Debug function to test feedback type changes
   const handleFeedbackTypeChange = (newType: string) => {
@@ -77,6 +91,7 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
   const handleLogout = async () => {
     try {
       console.log('GameSettingsDropdown: Starting logout process...');
+      gameSoundService.playSound('button-click');
       await signOut();
       console.log('GameSettingsDropdown: Logout completed successfully');
       setIsOpen(false);
@@ -107,6 +122,7 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
   };
 
   return (
+    <>
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
         <Button
@@ -186,8 +202,22 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem 
-          onClick={handleResetLevel}
+        <DropdownMenuItem
+          onClick={() => {
+            gameSoundService.playSound('button-click');
+            setShowSoundSettings(!showSoundSettings);
+          }}
+          className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+        >
+          <Volume2 className="w-4 h-4" />
+          <span>{t.sound}</span>
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onClick={() => {
+            gameSoundService.playSound('button-click');
+            handleResetLevel();
+          }}
           className="flex items-center space-x-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
         >
           <RotateCcw className="w-4 h-4" />
@@ -205,6 +235,29 @@ const GameSettingsDropdown: React.FC<GameSettingsDropdownProps> = ({
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+
+    {/* Sound Settings Panel */}
+    {showSoundSettings && (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+              {t.sound}
+            </h3>
+            <Button
+              onClick={() => setShowSoundSettings(false)}
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0"
+            >
+              ×
+            </Button>
+          </div>
+          <SoundSettings language={language} />
+        </div>
+      </div>
+    )}
+    </>
   );
 };
 

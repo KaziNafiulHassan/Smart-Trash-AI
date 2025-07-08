@@ -11,6 +11,7 @@ import StructuredFeedbackBox from '@/components/Game/StructuredFeedbackBox';
 import { neo4jService } from '@/services/neo4jService';
 import { ragLLMService } from '@/services/ragLLMService';
 import { feedbackService } from '@/services/feedbackService';
+import { gameSoundService } from '@/services/gameSoundService';
 
 interface FeedbackPopupProps {
   feedback: {
@@ -59,6 +60,10 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
   // No longer using Supabase-based feedback messages - only AI Assistant and Waste Information
 
   useEffect(() => {
+    // Play popup open sound and feedback sound
+    gameSoundService.playSound('popup-open');
+    gameSoundService.playSound(feedback.correct ? 'feedback-positive' : 'feedback-negative');
+
     loadAdditionalData();
   }, [feedback.item, feedback.bin, feedbackType, selectedModel]);
 
@@ -165,6 +170,9 @@ const FeedbackPopup: React.FC<FeedbackPopupProps> = ({ feedback, language, sessi
 
   // Save ratings when popup closes
   const handleClose = async () => {
+    // Play popup close sound
+    gameSoundService.playSound('popup-close');
+
     // Save current feedback ratings if both are provided
     if (currentRatings.clarity !== null && currentRatings.helpfulness !== null) {
       await saveCurrentFeedbackRating(currentRatings.clarity, currentRatings.helpfulness);

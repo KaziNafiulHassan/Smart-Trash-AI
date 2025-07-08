@@ -11,6 +11,7 @@ interface GameHeaderProps {
   onBackToHome: () => void;
   onResetLevel: () => void;
   onOpenSettings: () => void;
+  onSoundSettingsChange?: (isOpen: boolean) => void;
 }
 
 const texts = {
@@ -28,7 +29,8 @@ const GameHeader: React.FC<GameHeaderProps> = ({
   score,
   onBackToHome,
   onResetLevel,
-  onOpenSettings
+  onOpenSettings,
+  onSoundSettingsChange
 }) => {
   const t = texts[language];
 
@@ -56,6 +58,7 @@ const GameHeader: React.FC<GameHeaderProps> = ({
           language={language}
           onResetLevel={onResetLevel}
           onOpenModelSettings={onOpenSettings}
+          onSoundSettingsChange={onSoundSettingsChange}
         />
       </div>
     </div>

@@ -1,4 +1,5 @@
 import React from 'react';
+import { gameSoundService } from '@/services/gameSoundService';
 
 interface WasteItemProps {
   item: any;
@@ -25,6 +26,9 @@ const WasteItem: React.FC<WasteItemProps> = ({
     const target = e.currentTarget as HTMLElement;
     target.style.opacity = '0.7';
     target.style.transform = 'scale(0.95)';
+
+    // Play drag start sound
+    gameSoundService.playSound('drag-start');
 
     if (onDragStart) {
       onDragStart(item);

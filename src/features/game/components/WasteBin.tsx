@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { gameSoundService } from '@/services/gameSoundService';
 
 interface WasteBinProps {
   bin: {
@@ -80,6 +81,8 @@ const WasteBin: React.FC<WasteBinProps> = ({ bin, onDrop, isDropTarget = false }
     if (isDropTarget) {
       e.preventDefault();
       e.stopPropagation();
+      // Play hover sound when dragging over bin
+      gameSoundService.playSound('drag-hover');
     }
   };
 
