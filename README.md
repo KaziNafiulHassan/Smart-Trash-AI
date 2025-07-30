@@ -1,4 +1,4 @@
-# Smart Trash AI - EcoSort Adventures
+# Smart Trash AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
