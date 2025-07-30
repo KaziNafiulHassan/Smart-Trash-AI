@@ -5,7 +5,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Neo4j](https://img.shields.io/badge/Neo4j-5.x-green.svg)](https://neo4j.com/)
 
-An AI-powered educational platform for waste sorting and environmental education, developed as part of the **SMART TRASH Pillar** research project at **Magdeburg-Stendal University of Applied Sciences**.
+An AI-powered educational platform for waste sorting and environmental education, developed as part of the **SMART TRASH** research project at **Magdeburg-Stendal University of Applied Sciences**.
 
 **🌐 Live Demo**: [https://smart-trash-ai.lovable.app/](https://smart-trash-ai.lovable.app/)
 
@@ -16,7 +16,7 @@ This educational platform is being developed under **Pillar 2: Robot-Assisted Ci
 ### 🏛️ Academic Context
 
 **Institution**: Magdeburg-Stendal University of Applied Sciences
-**Project**: SMART TRASH Pillar Research Initiative
+**Project**: Smart-TRASH (Smart Technologies for Recycling and Sustainable Handling)
 **Focus Area**: Robot-Assisted Citizen-Oriented Education
 **Research Goal**: Sustainable waste stream quality improvement through innovative educational technology
 
